@@ -301,6 +301,38 @@ function App() {
     }
   };
 
+  // Helper function to detect video type
+  const getVideoType = (videoUrl) => {
+    if (!videoUrl) return 'unknown';
+    
+    // Check if it's a YouTube URL
+    if (videoUrl.includes('youtube.com/watch?v=') || videoUrl.includes('youtu.be/')) {
+      return 'youtube';
+    }
+    
+    // Check if it's a local file path (starts with /uploads or similar)
+    if (videoUrl.startsWith('/uploads/') || videoUrl.startsWith('uploads/')) {
+      return 'local';
+    }
+    
+    // Check if it's a local file with common video extensions
+    const videoExtensions = ['.mp4', '.avi', '.mov', '.wmv', '.webm', '.mkv', '.flv'];
+    if (videoExtensions.some(ext => videoUrl.toLowerCase().endsWith(ext))) {
+      return 'local';
+    }
+    
+    // Default to external URL
+    return 'external';
+  };
+
+  // Helper function to construct full video URL
+  const getFullVideoUrl = (videoPath) => {
+    if (videoPath.startsWith('http')) {
+      return videoPath;
+    }
+    return `${API_BASE_URL}/${videoPath}`;
+  };
+
   const getChapterProgress = (chapterId) => {
     return userProgress.find(p => p.chapter_id === chapterId);
   };
