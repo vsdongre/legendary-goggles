@@ -330,7 +330,8 @@ function App() {
     if (videoPath.startsWith('http')) {
       return videoPath;
     }
-    return `${API_BASE_URL}/${videoPath}`;
+    // Use the new media endpoint for local files
+    return `${API_BASE_URL}/api/media/${videoPath}`;
   };
 
   const getChapterProgress = (chapterId) => {
