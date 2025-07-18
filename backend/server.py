@@ -43,6 +43,7 @@ os.makedirs("uploads/documents", exist_ok=True)
 
 # Custom endpoint to serve video files with proper content-type
 @app.get("/uploads/{file_path:path}")
+@app.head("/uploads/{file_path:path}")
 async def serve_uploaded_file(file_path: str):
     from fastapi.responses import FileResponse
     import mimetypes
