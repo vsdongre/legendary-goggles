@@ -39,7 +39,7 @@ Your Enhanced E-Learning Platform is a comprehensive web-based educational syste
 ## **🚀 Getting Started**
 
 ### **Access the Platform**
-**URL**: https://fcddef90-9f88-49d8-b843-8e55bf0c7946.preview.emergentagent.com
+**URL**: https://6359bc25-627c-4dce-8575-b81593bd4fe0.preview.emergentagent.com
 
 ### **Pre-Created Accounts**
 
