@@ -21,6 +21,7 @@ function App() {
     content_type: 'text',
     content_data: ''
   });
+  const [showUploadModal, setShowUploadModal] = useState(false);
 
   // Check for existing token on app load
   useEffect(() => {
