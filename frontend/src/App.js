@@ -972,74 +972,194 @@ function App() {
                         {/* Video Content */}
                         {content.content_type === 'video' ? (
                           <div className="mt-3">
-                            <div className="bg-gradient-to-r from-red-500 to-red-600 rounded-lg p-6 text-white">
-                              {/* Video Icon and Title */}
-                              <div className="flex items-center space-x-4 mb-4">
-                                <div className="w-12 h-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center text-2xl">
-                                  ▶️
-                                </div>
-                                <div>
-                                  <h6 className="font-bold text-lg">{content.title}</h6>
-                                  <p className="text-red-100 text-sm">Video Content</p>
-                                </div>
-                              </div>
+                            {(() => {
+                              const videoType = getVideoType(content.content_data);
                               
-                              {/* Large Watch Button */}
-                              <a 
-                                href={content.content_data} 
-                                target="_blank" 
-                                rel="noopener noreferrer" 
-                                className="block w-full bg-white text-red-600 text-center py-4 px-6 rounded-lg font-bold text-lg hover:bg-red-50 transition-colors duration-200 shadow-lg"
-                              >
-                                🎥 WATCH VIDEO NOW
-                              </a>
-                              
-                              {/* Video URL Display */}
-                              <div className="mt-3 text-center">
-                                <p className="text-red-100 text-sm">
-                                  📺 Video will open in YouTube
-                                </p>
-                                <p className="text-red-200 text-xs mt-1 break-all">
-                                  {content.content_data}
-                                </p>
-                              </div>
-                              
-                              {/* Additional Actions */}
-                              <div className="mt-4 flex justify-center space-x-2">
-                                <button 
-                                  onClick={() => {
-                                    navigator.clipboard.writeText(content.content_data);
-                                    alert('Video URL copied to clipboard!');
-                                  }}
-                                  className="px-4 py-2 bg-white bg-opacity-20 text-white rounded hover:bg-opacity-30 transition-colors text-sm"
-                                >
-                                  📋 Copy URL
-                                </button>
-                                <button 
-                                  onClick={() => {
-                                    const videoId = content.content_data.includes('youtube.com/watch?v=') ? 
-                                      content.content_data.split('v=')[1].split('&')[0] :
-                                      content.content_data.includes('youtu.be/') ?
-                                      content.content_data.split('youtu.be/')[1].split('?')[0] : null;
+                              if (videoType === 'youtube') {
+                                return (
+                                  <div className="bg-gradient-to-r from-red-500 to-red-600 rounded-lg p-6 text-white">
+                                    {/* Video Icon and Title */}
+                                    <div className="flex items-center space-x-4 mb-4">
+                                      <div className="w-12 h-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center text-2xl">
+                                        ▶️
+                                      </div>
+                                      <div>
+                                        <h6 className="font-bold text-lg">{content.title}</h6>
+                                        <p className="text-red-100 text-sm">YouTube Video</p>
+                                      </div>
+                                    </div>
                                     
-                                    if (videoId) {
-                                      const shareUrl = `https://www.youtube.com/watch?v=${videoId}`;
-                                      if (navigator.share) {
-                                        navigator.share({
-                                          title: content.title,
-                                          url: shareUrl
-                                        });
-                                      } else {
-                                        alert(`Share this video: ${shareUrl}`);
-                                      }
-                                    }
-                                  }}
-                                  className="px-4 py-2 bg-white bg-opacity-20 text-white rounded hover:bg-opacity-30 transition-colors text-sm"
-                                >
-                                  📤 Share
-                                </button>
-                              </div>
-                            </div>
+                                    {/* Large Watch Button */}
+                                    <a 
+                                      href={content.content_data} 
+                                      target="_blank" 
+                                      rel="noopener noreferrer" 
+                                      className="block w-full bg-white text-red-600 text-center py-4 px-6 rounded-lg font-bold text-lg hover:bg-red-50 transition-colors duration-200 shadow-lg"
+                                    >
+                                      🎥 WATCH ON YOUTUBE
+                                    </a>
+                                    
+                                    {/* Video URL Display */}
+                                    <div className="mt-3 text-center">
+                                      <p className="text-red-100 text-sm">
+                                        📺 Video will open in YouTube
+                                      </p>
+                                      <p className="text-red-200 text-xs mt-1 break-all">
+                                        {content.content_data}
+                                      </p>
+                                    </div>
+                                    
+                                    {/* Additional Actions */}
+                                    <div className="mt-4 flex justify-center space-x-2">
+                                      <button 
+                                        onClick={() => {
+                                          navigator.clipboard.writeText(content.content_data);
+                                          alert('Video URL copied to clipboard!');
+                                        }}
+                                        className="px-4 py-2 bg-white bg-opacity-20 text-white rounded hover:bg-opacity-30 transition-colors text-sm"
+                                      >
+                                        📋 Copy URL
+                                      </button>
+                                      <button 
+                                        onClick={() => {
+                                          const videoId = content.content_data.includes('youtube.com/watch?v=') ? 
+                                            content.content_data.split('v=')[1].split('&')[0] :
+                                            content.content_data.includes('youtu.be/') ?
+                                            content.content_data.split('youtu.be/')[1].split('?')[0] : null;
+                                          
+                                          if (videoId) {
+                                            const shareUrl = `https://www.youtube.com/watch?v=${videoId}`;
+                                            if (navigator.share) {
+                                              navigator.share({
+                                                title: content.title,
+                                                url: shareUrl
+                                              });
+                                            } else {
+                                              alert(`Share this video: ${shareUrl}`);
+                                            }
+                                          }
+                                        }}
+                                        className="px-4 py-2 bg-white bg-opacity-20 text-white rounded hover:bg-opacity-30 transition-colors text-sm"
+                                      >
+                                        📤 Share
+                                      </button>
+                                    </div>
+                                  </div>
+                                );
+                              } else if (videoType === 'local') {
+                                return (
+                                  <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg p-6 text-white">
+                                    {/* Video Icon and Title */}
+                                    <div className="flex items-center space-x-4 mb-4">
+                                      <div className="w-12 h-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center text-2xl">
+                                        🎬
+                                      </div>
+                                      <div>
+                                        <h6 className="font-bold text-lg">{content.title}</h6>
+                                        <p className="text-purple-100 text-sm">Local Video File</p>
+                                      </div>
+                                    </div>
+                                    
+                                    {/* Video Player */}
+                                    <div className="bg-black rounded-lg overflow-hidden shadow-xl">
+                                      <video 
+                                        controls 
+                                        className="w-full h-auto"
+                                        preload="metadata"
+                                        onError={(e) => {
+                                          e.target.style.display = 'none';
+                                          e.target.nextSibling.style.display = 'block';
+                                        }}
+                                      >
+                                        <source src={getFullVideoUrl(content.content_data)} type="video/mp4" />
+                                        <source src={getFullVideoUrl(content.content_data)} type="video/webm" />
+                                        <source src={getFullVideoUrl(content.content_data)} type="video/ogg" />
+                                        Your browser does not support the video tag.
+                                      </video>
+                                      
+                                      {/* Fallback Error Message */}
+                                      <div className="hidden p-8 text-center text-white">
+                                        <div className="text-6xl mb-4">❌</div>
+                                        <h3 className="text-xl font-bold mb-2">Video Could Not Load</h3>
+                                        <p className="text-gray-300 mb-4">There was an issue loading this video file.</p>
+                                        <a 
+                                          href={getFullVideoUrl(content.content_data)} 
+                                          target="_blank" 
+                                          rel="noopener noreferrer"
+                                          className="inline-block bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-medium"
+                                        >
+                                          🔗 Try Direct Link
+                                        </a>
+                                      </div>
+                                    </div>
+                                    
+                                    {/* Video Info */}
+                                    <div className="mt-4 text-center">
+                                      <p className="text-purple-100 text-sm">
+                                        🎥 Playing from server
+                                      </p>
+                                      <p className="text-purple-200 text-xs mt-1">
+                                        {content.content_data}
+                                      </p>
+                                    </div>
+                                    
+                                    {/* Additional Actions */}
+                                    <div className="mt-4 flex justify-center space-x-2">
+                                      <a 
+                                        href={getFullVideoUrl(content.content_data)} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className="px-4 py-2 bg-white bg-opacity-20 text-white rounded hover:bg-opacity-30 transition-colors text-sm"
+                                      >
+                                        🔗 Open in New Tab
+                                      </a>
+                                      <a 
+                                        href={getFullVideoUrl(content.content_data)} 
+                                        download
+                                        className="px-4 py-2 bg-white bg-opacity-20 text-white rounded hover:bg-opacity-30 transition-colors text-sm"
+                                      >
+                                        📥 Download
+                                      </a>
+                                    </div>
+                                  </div>
+                                );
+                              } else {
+                                return (
+                                  <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg p-6 text-white">
+                                    {/* Video Icon and Title */}
+                                    <div className="flex items-center space-x-4 mb-4">
+                                      <div className="w-12 h-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center text-2xl">
+                                        🌐
+                                      </div>
+                                      <div>
+                                        <h6 className="font-bold text-lg">{content.title}</h6>
+                                        <p className="text-blue-100 text-sm">External Video</p>
+                                      </div>
+                                    </div>
+                                    
+                                    {/* External Video Button */}
+                                    <a 
+                                      href={content.content_data} 
+                                      target="_blank" 
+                                      rel="noopener noreferrer" 
+                                      className="block w-full bg-white text-blue-600 text-center py-4 px-6 rounded-lg font-bold text-lg hover:bg-blue-50 transition-colors duration-200 shadow-lg"
+                                    >
+                                      🎥 WATCH VIDEO
+                                    </a>
+                                    
+                                    {/* Video URL Display */}
+                                    <div className="mt-3 text-center">
+                                      <p className="text-blue-100 text-sm">
+                                        🔗 External video link
+                                      </p>
+                                      <p className="text-blue-200 text-xs mt-1 break-all">
+                                        {content.content_data}
+                                      </p>
+                                    </div>
+                                  </div>
+                                );
+                              }
+                            })()}
                           </div>
                         ) : 
                         
