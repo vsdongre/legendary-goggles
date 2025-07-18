@@ -6,11 +6,20 @@ const API_BASE_URL = process.env.REACT_APP_BACKEND_URL;
 function App() {
   const [user, setUser] = useState(null);
   const [currentView, setCurrentView] = useState('login');
-  const [courses, setCourses] = useState([]);
-  const [selectedCourse, setSelectedCourse] = useState(null);
-  const [userEnrollments, setUserEnrollments] = useState([]);
+  const [classes, setClasses] = useState([]);
+  const [subjects, setSubjects] = useState([]);
+  const [chapters, setChapters] = useState([]);
+  const [selectedClass, setSelectedClass] = useState(null);
+  const [selectedSubject, setSelectedSubject] = useState(null);
+  const [selectedChapter, setSelectedChapter] = useState(null);
+  const [chapterDetails, setChapterDetails] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [uploadData, setUploadData] = useState({
+    title: '',
+    content_type: 'text',
+    content_data: ''
+  });
 
   // Check for existing token on app load
   useEffect(() => {
@@ -31,8 +40,7 @@ function App() {
         const userData = await response.json();
         setUser(userData);
         setCurrentView('dashboard');
-        fetchCourses();
-        fetchUserEnrollments(userData.id);
+        fetchClasses();
       } else {
         localStorage.removeItem('token');
       }
@@ -41,32 +49,51 @@ function App() {
     }
   };
 
-  const fetchCourses = async () => {
+  const fetchClasses = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/courses`);
+      const response = await fetch(`${API_BASE_URL}/api/classes`);
       if (response.ok) {
-        const coursesData = await response.json();
-        setCourses(coursesData);
+        const classesData = await response.json();
+        setClasses(classesData);
       }
     } catch (err) {
-      console.error('Error fetching courses:', err);
+      console.error('Error fetching classes:', err);
     }
   };
 
-  const fetchUserEnrollments = async (userId) => {
+  const fetchSubjects = async (classId) => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/api/enrollments/user/${userId}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      const response = await fetch(`${API_BASE_URL}/api/subjects/${classId}`);
       if (response.ok) {
-        const enrollmentsData = await response.json();
-        setUserEnrollments(enrollmentsData);
+        const subjectsData = await response.json();
+        setSubjects(subjectsData);
       }
     } catch (err) {
-      console.error('Error fetching enrollments:', err);
+      console.error('Error fetching subjects:', err);
+    }
+  };
+
+  const fetchChapters = async (subjectId) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/chapters/${subjectId}`);
+      if (response.ok) {
+        const chaptersData = await response.json();
+        setChapters(chaptersData);
+      }
+    } catch (err) {
+      console.error('Error fetching chapters:', err);
+    }
+  };
+
+  const fetchChapterDetails = async (chapterId) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/chapter/${chapterId}`);
+      if (response.ok) {
+        const chapterData = await response.json();
+        setChapterDetails(chapterData);
+      }
+    } catch (err) {
+      console.error('Error fetching chapter details:', err);
     }
   };
 
@@ -87,8 +114,7 @@ function App() {
         localStorage.setItem('token', data.access_token);
         setUser(data.user);
         setCurrentView('dashboard');
-        fetchCourses();
-        fetchUserEnrollments(data.user.id);
+        fetchClasses();
       } else {
         const errorData = await response.json();
         setError(errorData.detail || 'Login failed');
@@ -117,8 +143,7 @@ function App() {
         localStorage.setItem('token', data.access_token);
         setUser(data.user);
         setCurrentView('dashboard');
-        fetchCourses();
-        fetchUserEnrollments(data.user.id);
+        fetchClasses();
       } else {
         const errorData = await response.json();
         setError(errorData.detail || 'Signup failed');
@@ -134,51 +159,72 @@ function App() {
     localStorage.removeItem('token');
     setUser(null);
     setCurrentView('login');
-    setCourses([]);
-    setUserEnrollments([]);
+    setClasses([]);
+    setSubjects([]);
+    setChapters([]);
+    setSelectedClass(null);
+    setSelectedSubject(null);
+    setSelectedChapter(null);
+    setChapterDetails(null);
   };
 
-  const handleEnrollment = async (courseId) => {
+  const handleClassSelect = (classData) => {
+    setSelectedClass(classData);
+    setSelectedSubject(null);
+    setSelectedChapter(null);
+    setChapterDetails(null);
+    setSubjects([]);
+    setChapters([]);
+    fetchSubjects(classData.id);
+  };
+
+  const handleSubjectSelect = (subjectData) => {
+    setSelectedSubject(subjectData);
+    setSelectedChapter(null);
+    setChapterDetails(null);
+    setChapters([]);
+    fetchChapters(subjectData.id);
+  };
+
+  const handleChapterSelect = (chapterData) => {
+    setSelectedChapter(chapterData);
+    fetchChapterDetails(chapterData.id);
+  };
+
+  const handleUpload = async (e) => {
+    e.preventDefault();
+    if (!selectedChapter) {
+      alert('Please select a chapter first');
+      return;
+    }
+
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/api/enrollments`, {
+      const response = await fetch(`${API_BASE_URL}/api/content/upload`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ course_id: courseId }),
+        body: JSON.stringify({
+          chapter_id: selectedChapter.id,
+          title: uploadData.title,
+          content_type: uploadData.content_type,
+          content_data: uploadData.content_data
+        }),
       });
 
       if (response.ok) {
-        alert('Successfully enrolled in course!');
-        fetchUserEnrollments(user.id);
+        alert('Content uploaded successfully!');
+        setUploadData({ title: '', content_type: 'text', content_data: '' });
+        // Refresh chapter details
+        fetchChapterDetails(selectedChapter.id);
       } else {
         const errorData = await response.json();
-        alert(errorData.detail || 'Enrollment failed');
+        alert(errorData.detail || 'Upload failed');
       }
     } catch (err) {
       alert('Network error. Please try again.');
-    }
-  };
-
-  const updateProgress = async (courseId, lessonId) => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/api/progress`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ course_id: courseId, lesson_id: lessonId }),
-      });
-
-      if (response.ok) {
-        fetchUserEnrollments(user.id);
-      }
-    } catch (err) {
-      console.error('Error updating progress:', err);
     }
   };
 
@@ -196,8 +242,11 @@ function App() {
         <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-xl shadow-lg">
           <div>
             <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-              Sign in to your account
+              E-Learning Platform
             </h2>
+            <p className="mt-2 text-center text-sm text-gray-600">
+              Sign in to access your classes
+            </p>
           </div>
           <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
             <div className="rounded-md shadow-sm -space-y-px">
@@ -344,16 +393,13 @@ function App() {
   };
 
   const Dashboard = () => {
-    const enrolledCourseIds = userEnrollments.map(enrollment => enrollment.course_id);
-    const availableCourses = courses.filter(course => !enrolledCourseIds.includes(course.id));
-
     return (
       <div className="min-h-screen bg-gray-50">
         <nav className="bg-white shadow-sm">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between h-16">
               <div className="flex items-center">
-                <h1 className="text-xl font-semibold text-gray-900">LearnHub</h1>
+                <h1 className="text-xl font-semibold text-gray-900">E-Learning Platform</h1>
               </div>
               <div className="flex items-center space-x-4">
                 <span className="text-gray-700">Welcome, {user.username}!</span>
@@ -369,225 +415,175 @@ function App() {
         </nav>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="mb-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">My Courses</h2>
-            {userEnrollments.length === 0 ? (
-              <p className="text-gray-500">You haven't enrolled in any courses yet.</p>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {userEnrollments.map((enrollment) => (
-                  <div key={enrollment.id} className="bg-white rounded-lg shadow-md overflow-hidden">
-                    <img
-                      src={enrollment.course.image_url}
-                      alt={enrollment.course.title}
-                      className="w-full h-48 object-cover"
-                    />
-                    <div className="p-6">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                        {enrollment.course.title}
-                      </h3>
-                      <p className="text-gray-600 text-sm mb-4">
-                        {enrollment.course.description}
-                      </p>
-                      <div className="mb-4">
-                        <div className="flex justify-between text-sm text-gray-600 mb-1">
-                          <span>Progress</span>
-                          <span>{Math.round(enrollment.progress)}%</span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div
-                            className="bg-indigo-600 h-2 rounded-full"
-                            style={{ width: `${enrollment.progress}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => setSelectedCourse(enrollment.course)}
-                        className="w-full bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-sm font-medium"
-                      >
-                        Continue Learning
-                      </button>
-                    </div>
-                  </div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Class Selection */}
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Select Class</h2>
+              <div className="space-y-2">
+                {classes.map((classData) => (
+                  <button
+                    key={classData.id}
+                    onClick={() => handleClassSelect(classData)}
+                    className={`w-full text-left p-3 rounded-md border ${
+                      selectedClass?.id === classData.id
+                        ? 'bg-indigo-100 border-indigo-500 text-indigo-900'
+                        : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                    }`}
+                  >
+                    <div className="font-medium">{classData.name}</div>
+                    <div className="text-sm text-gray-500">{classData.description}</div>
+                  </button>
                 ))}
               </div>
-            )}
-          </div>
-
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Available Courses</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {availableCourses.map((course) => (
-                <div key={course.id} className="bg-white rounded-lg shadow-md overflow-hidden">
-                  <img
-                    src={course.image_url}
-                    alt={course.title}
-                    className="w-full h-48 object-cover"
-                  />
-                  <div className="p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                      {course.title}
-                    </h3>
-                    <p className="text-gray-600 text-sm mb-4">
-                      {course.description}
-                    </p>
-                    <div className="flex justify-between items-center text-sm text-gray-500 mb-4">
-                      <span>Instructor: {course.instructor}</span>
-                      <span className="bg-indigo-100 text-indigo-800 px-2 py-1 rounded">
-                        {course.difficulty}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center text-sm text-gray-500 mb-4">
-                      <span>{course.duration} minutes</span>
-                      <span>{course.content.length} lessons</span>
-                    </div>
-                    <button
-                      onClick={() => handleEnrollment(course.id)}
-                      className="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium"
-                    >
-                      Enroll Now
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  const CourseViewer = () => {
-    const [currentLessonIndex, setCurrentLessonIndex] = useState(0);
-    const currentLesson = selectedCourse.content[currentLessonIndex];
-
-    const markLessonComplete = () => {
-      updateProgress(selectedCourse.id, currentLesson.id);
-    };
-
-    const nextLesson = () => {
-      if (currentLessonIndex < selectedCourse.content.length - 1) {
-        setCurrentLessonIndex(currentLessonIndex + 1);
-      }
-    };
-
-    const prevLesson = () => {
-      if (currentLessonIndex > 0) {
-        setCurrentLessonIndex(currentLessonIndex - 1);
-      }
-    };
-
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <nav className="bg-white shadow-sm">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between h-16">
-              <div className="flex items-center">
-                <button
-                  onClick={() => setSelectedCourse(null)}
-                  className="mr-4 text-indigo-600 hover:text-indigo-500"
-                >
-                  ← Back to Dashboard
-                </button>
-                <h1 className="text-xl font-semibold text-gray-900">
-                  {selectedCourse.title}
-                </h1>
-              </div>
-              <div className="flex items-center space-x-4">
-                <span className="text-gray-700">Welcome, {user.username}!</span>
-                <button
-                  onClick={handleLogout}
-                  className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium"
-                >
-                  Logout
-                </button>
-              </div>
-            </div>
-          </div>
-        </nav>
-
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-            {/* Course Content */}
-            <div className="lg:col-span-3">
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <h2 className="text-2xl font-bold text-gray-900 mb-4">
-                  Lesson {currentLessonIndex + 1}: {currentLesson.title}
-                </h2>
-                
-                {currentLesson.type === 'video' ? (
-                  <div className="mb-6">
-                    <div className="aspect-w-16 aspect-h-9">
-                      <iframe
-                        src={currentLesson.url}
-                        title={currentLesson.title}
-                        className="w-full h-80 rounded-lg"
-                        allowFullScreen
-                      ></iframe>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="mb-6">
-                    <div className="prose max-w-none">
-                      <p className="text-gray-700 leading-relaxed">
-                        {currentLesson.content}
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                <div className="flex justify-between items-center">
-                  <button
-                    onClick={prevLesson}
-                    disabled={currentLessonIndex === 0}
-                    className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-md text-sm font-medium disabled:opacity-50"
-                  >
-                    Previous
-                  </button>
-                  
-                  <button
-                    onClick={markLessonComplete}
-                    className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium"
-                  >
-                    Mark as Complete
-                  </button>
-                  
-                  <button
-                    onClick={nextLesson}
-                    disabled={currentLessonIndex === selectedCourse.content.length - 1}
-                    className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-sm font-medium disabled:opacity-50"
-                  >
-                    Next
-                  </button>
-                </div>
-              </div>
             </div>
 
-            {/* Course Sidebar */}
-            <div className="lg:col-span-1">
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Course Content</h3>
+            {/* Subject Selection */}
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Select Subject</h2>
+              {selectedClass ? (
                 <div className="space-y-2">
-                  {selectedCourse.content.map((lesson, index) => (
+                  {subjects.map((subject) => (
                     <button
-                      key={lesson.id}
-                      onClick={() => setCurrentLessonIndex(index)}
-                      className={`w-full text-left p-3 rounded-md text-sm ${
-                        index === currentLessonIndex
-                          ? 'bg-indigo-100 text-indigo-800 border-l-4 border-indigo-500'
-                          : 'text-gray-700 hover:bg-gray-50'
+                      key={subject.id}
+                      onClick={() => handleSubjectSelect(subject)}
+                      className={`w-full text-left p-3 rounded-md border ${
+                        selectedSubject?.id === subject.id
+                          ? 'bg-green-100 border-green-500 text-green-900'
+                          : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
                       }`}
                     >
-                      <div className="font-medium">{lesson.title}</div>
-                      <div className="text-xs text-gray-500">
-                        {lesson.type === 'video' ? `${lesson.duration} min` : 'Reading'}
-                      </div>
+                      <div className="font-medium">{subject.name}</div>
+                      <div className="text-sm text-gray-500">{subject.description}</div>
                     </button>
                   ))}
                 </div>
-              </div>
+              ) : (
+                <p className="text-gray-500 text-sm">Please select a class first</p>
+              )}
+            </div>
+
+            {/* Chapter Selection */}
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Select Chapter</h2>
+              {selectedSubject ? (
+                <div className="space-y-2">
+                  {chapters.map((chapter) => (
+                    <button
+                      key={chapter.id}
+                      onClick={() => handleChapterSelect(chapter)}
+                      className={`w-full text-left p-3 rounded-md border ${
+                        selectedChapter?.id === chapter.id
+                          ? 'bg-blue-100 border-blue-500 text-blue-900'
+                          : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                      }`}
+                    >
+                      <div className="font-medium">{chapter.name}</div>
+                      <div className="text-sm text-gray-500">{chapter.description}</div>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-500 text-sm">Please select a subject first</p>
+              )}
             </div>
           </div>
+
+          {/* Chapter Details */}
+          {chapterDetails && (
+            <div className="mt-8 bg-white rounded-lg shadow-md p-6">
+              <div className="mb-6">
+                <h3 className="text-xl font-bold text-gray-900 mb-2">
+                  {chapterDetails.chapter.name}
+                </h3>
+                <div className="text-sm text-gray-600 mb-4">
+                  {chapterDetails.class.name} → {chapterDetails.subject.name} → {chapterDetails.chapter.name}
+                </div>
+                <p className="text-gray-700 mb-4">{chapterDetails.chapter.description}</p>
+                <div className="prose max-w-none">
+                  <p className="text-gray-800 leading-relaxed">
+                    {chapterDetails.chapter.content}
+                  </p>
+                </div>
+              </div>
+
+              {/* Additional Content */}
+              {chapterDetails.content && chapterDetails.content.length > 0 && (
+                <div className="mt-6">
+                  <h4 className="text-lg font-semibold text-gray-900 mb-4">Additional Content</h4>
+                  <div className="space-y-4">
+                    {chapterDetails.content.map((content) => (
+                      <div key={content.id} className="border rounded-md p-4">
+                        <h5 className="font-medium text-gray-900 mb-2">{content.title}</h5>
+                        <span className="inline-block bg-gray-100 text-gray-800 px-2 py-1 rounded text-sm mb-2">
+                          {content.content_type}
+                        </span>
+                        <p className="text-gray-700">{content.content_data}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Upload Section */}
+          {selectedChapter && (
+            <div className="mt-8 bg-white rounded-lg shadow-md p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Upload Content</h3>
+              <form onSubmit={handleUpload} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Content Title
+                  </label>
+                  <input
+                    type="text"
+                    value={uploadData.title}
+                    onChange={(e) => setUploadData({...uploadData, title: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                    placeholder="Enter content title"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Content Type
+                  </label>
+                  <select
+                    value={uploadData.content_type}
+                    onChange={(e) => setUploadData({...uploadData, content_type: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  >
+                    <option value="text">Text</option>
+                    <option value="video">Video URL</option>
+                    <option value="document">Document</option>
+                    <option value="image">Image URL</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Content Data
+                  </label>
+                  <textarea
+                    value={uploadData.content_data}
+                    onChange={(e) => setUploadData({...uploadData, content_data: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                    rows={4}
+                    placeholder="Enter content data (text, URL, etc.)"
+                    required
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+                >
+                  Upload Content
+                </button>
+              </form>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -596,10 +592,6 @@ function App() {
   // Main render logic
   if (!user) {
     return currentView === 'login' ? <LoginForm /> : <SignupForm />;
-  }
-
-  if (selectedCourse) {
-    return <CourseViewer />;
   }
 
   return <Dashboard />;
