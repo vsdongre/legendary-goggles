@@ -333,6 +333,8 @@ function App() {
 
     const handleLocalSubmit = useCallback(async (e) => {
       e.preventDefault();
+      console.log('Form submitted with data:', localData);
+      
       if (!selectedChapter) {
         alert('Please select a chapter first');
         return;
@@ -340,6 +342,8 @@ function App() {
 
       try {
         const token = localStorage.getItem('token');
+        console.log('Submitting content with token:', token ? 'Present' : 'Missing');
+        
         const response = await fetch(`${API_BASE_URL}/api/content/create`, {
           method: 'POST',
           headers: {
@@ -355,7 +359,11 @@ function App() {
           }),
         });
 
+        console.log('Response status:', response.status);
+        
         if (response.ok) {
+          const result = await response.json();
+          console.log('Success:', result);
           alert('Content added successfully!');
           setLocalData({ title: '', content_type: 'document', file_path: '', description: '' });
           setContentData({ title: '', content_type: 'document', file_path: '', description: '' });
@@ -366,9 +374,11 @@ function App() {
           }
         } else {
           const errorData = await response.json();
+          console.log('Error:', errorData);
           alert(errorData.detail || 'Failed to add content');
         }
       } catch (err) {
+        console.log('Network error:', err);
         alert('Network error. Please try again.');
       }
     }, [localData, selectedChapter]);
