@@ -316,12 +316,26 @@ def main():
     # Test 3: Demo user login
     print(f"\n🔐 Testing demo user login")
     if not tester.test_demo_login():
-        print("❌ Demo login failed, trying signup")
+        print("❌ Demo login failed, trying to create demo student")
         
-        # Test 4: User signup as fallback
-        if not tester.test_signup():
-            print("❌ Signup failed, stopping tests")
-            return 1
+        # Try to create demo student
+        if tester.test_create_demo_student():
+            print("✅ Demo student created, trying login again")
+            if not tester.test_demo_login():
+                print("❌ Demo login still failed after creation")
+                return 1
+        else:
+            print("❌ Failed to create demo student, trying regular signup")
+            # Test 4: User signup as fallback
+            if not tester.test_signup():
+                print("❌ Signup failed, stopping tests")
+                return 1
+    
+    # Test 5: Admin login
+    print(f"\n🔐 Testing admin user login")
+    if not tester.test_admin_login():
+        print("❌ Admin login failed")
+        return 1
     
     # Test 5: Get user info (verify JWT token works)
     if not tester.test_get_user_info():
