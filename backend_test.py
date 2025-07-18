@@ -262,58 +262,83 @@ def main():
     # Test 1: Root endpoint
     tester.test_root_endpoint()
     
-    # Test 2: Get courses (should have sample data)
-    courses_success, courses = tester.test_get_courses()
-    if not courses_success or not courses:
-        print("❌ Cannot proceed without courses data")
+    # Test 2: Get classes (should have sample data)
+    classes_success, classes = tester.test_get_classes()
+    if not classes_success or not classes:
+        print("❌ Cannot proceed without classes data")
         return 1
     
-    # Test 3: User signup
-    if not tester.test_signup():
-        print("❌ Signup failed, stopping tests")
-        return 1
+    # Test 3: Demo user login
+    print(f"\n🔐 Testing demo user login")
+    if not tester.test_demo_login():
+        print("❌ Demo login failed, trying signup")
+        
+        # Test 4: User signup as fallback
+        if not tester.test_signup():
+            print("❌ Signup failed, stopping tests")
+            return 1
     
-    # Test 4: Get user info (verify JWT token works)
+    # Test 5: Get user info (verify JWT token works)
     if not tester.test_get_user_info():
         print("❌ User info retrieval failed")
         return 1
     
-    # Test 5: Enroll in first course
-    first_course = courses[0]
-    course_id = first_course['id']
-    print(f"\n📚 Testing enrollment in course: {first_course['title']}")
+    # Test 6: Test hierarchical data structure
+    print(f"\n📚 Testing hierarchical data structure")
     
-    if not tester.test_enroll_in_course(course_id):
-        print("❌ Course enrollment failed")
+    # Test subjects for each class
+    all_subjects = []
+    for class_item in classes:
+        class_id = class_item['id']
+        class_name = class_item['name']
+        
+        subjects_success, subjects = tester.test_get_subjects_by_class(class_id, class_name)
+        if subjects_success and subjects:
+            all_subjects.extend(subjects)
+    
+    if not all_subjects:
+        print("❌ No subjects found, cannot test chapters")
         return 1
     
-    # Test 6: Get user enrollments
-    enrollments_success, enrollments = tester.test_get_user_enrollments()
-    if not enrollments_success:
-        print("❌ Getting enrollments failed")
+    # Test chapters for each subject
+    all_chapters = []
+    for subject in all_subjects[:3]:  # Test first 3 subjects to avoid too many requests
+        subject_id = subject['id']
+        subject_name = subject['name']
+        
+        chapters_success, chapters = tester.test_get_chapters_by_subject(subject_id, subject_name)
+        if chapters_success and chapters:
+            all_chapters.extend(chapters)
+    
+    if not all_chapters:
+        print("❌ No chapters found, cannot test chapter details")
         return 1
     
-    # Test 7: Update progress for first lesson
-    if enrollments and len(enrollments) > 0:
-        enrolled_course = enrollments[0]['course']
-        if enrolled_course and 'content' in enrolled_course and len(enrolled_course['content']) > 0:
-            first_lesson_id = enrolled_course['content'][0]['id']
-            print(f"\n📖 Testing progress update for lesson: {enrolled_course['content'][0]['title']}")
-            
-            if not tester.test_update_progress(course_id, first_lesson_id):
-                print("❌ Progress update failed")
-                return 1
-            
-            # Test 8: Get course progress
-            if not tester.test_get_course_progress(course_id):
-                print("❌ Getting course progress failed")
-                return 1
+    # Test chapter details for first few chapters
+    print(f"\n📖 Testing chapter details")
+    for chapter in all_chapters[:3]:  # Test first 3 chapters
+        chapter_id = chapter['id']
+        chapter_name = chapter['name']
+        
+        details_success, details = tester.test_get_chapter_details(chapter_id, chapter_name)
+        if not details_success:
+            print(f"❌ Failed to get details for chapter: {chapter_name}")
+            return 1
     
-    # Test 9: Test login with existing user
-    print(f"\n🔐 Testing login with existing user")
-    if not tester.test_login():
-        print("❌ Login with existing user failed")
-        return 1
+    # Test 7: Content upload
+    if all_chapters:
+        first_chapter_id = all_chapters[0]['id']
+        print(f"\n📤 Testing content upload")
+        if not tester.test_content_upload(first_chapter_id):
+            print("❌ Content upload failed")
+            return 1
+    
+    # Test 8: Test login with new user (if we created one)
+    if tester.test_user_email != "demo@example.com":
+        print(f"\n🔐 Testing login with created user")
+        if not tester.test_login():
+            print("❌ Login with created user failed")
+            return 1
     
     # Print final results
     print("\n" + "=" * 50)
