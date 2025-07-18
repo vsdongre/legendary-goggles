@@ -553,6 +553,8 @@ function App() {
       </div>
     );
   };
+
+  const Dashboard = () => {
     const completedChapters = userProgress.filter(p => p.completed).length;
     const totalChapters = userProgress.length;
     const progressPercentage = totalChapters > 0 ? (completedChapters / totalChapters) * 100 : 0;
