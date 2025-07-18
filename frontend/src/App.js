@@ -310,12 +310,17 @@ function App() {
       return 'youtube';
     }
     
-    // Check if it's a local file path (starts with /uploads or similar)
+    // Check if it's an external URL (starts with http/https)
+    if (videoUrl.startsWith('http://') || videoUrl.startsWith('https://')) {
+      return 'external';
+    }
+    
+    // Check if it's a local file path (starts with /uploads or uploads/)
     if (videoUrl.startsWith('/uploads/') || videoUrl.startsWith('uploads/')) {
       return 'local';
     }
     
-    // Check if it's a local file with common video extensions
+    // Check if it's a local file with common video extensions (but not external URL)
     const videoExtensions = ['.mp4', '.avi', '.mov', '.wmv', '.webm', '.mkv', '.flv'];
     if (videoExtensions.some(ext => videoUrl.toLowerCase().endsWith(ext))) {
       return 'local';
