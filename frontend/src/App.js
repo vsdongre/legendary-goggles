@@ -609,7 +609,7 @@ function App() {
                   localContentType === 'text' ? 
                   'Enter your text content here...' :
                   localContentType === 'video' ?
-                  'Enter video URL (e.g., https://youtube.com/watch?v=...)' :
+                  'Enter video URL (e.g., https://www.youtube.com/watch?v=VIDEO_ID or https://youtu.be/VIDEO_ID)' :
                   localContentType === 'document' ?
                   'Enter document URL or file path' :
                   'Enter image URL'
@@ -617,6 +617,19 @@ function App() {
                 required
                 autoComplete="off"
               />
+              {localContentType === 'video' && (
+                <div className="mt-2 p-3 bg-blue-50 rounded-lg">
+                  <p className="text-sm text-blue-800">
+                    📹 <strong>Video URL Tips:</strong>
+                  </p>
+                  <ul className="text-xs text-blue-700 mt-1 space-y-1">
+                    <li>• YouTube: https://www.youtube.com/watch?v=VIDEO_ID</li>
+                    <li>• YouTube Short: https://youtu.be/VIDEO_ID</li>
+                    <li>• Vimeo: https://vimeo.com/VIDEO_ID</li>
+                    <li>• Other video URLs should be direct links</li>
+                  </ul>
+                </div>
+              )}
             </div>
 
             <div className="flex gap-4">
