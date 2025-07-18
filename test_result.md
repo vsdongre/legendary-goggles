@@ -168,15 +168,18 @@ frontend:
 
   - task: "Video Type Detection"
     implemented: true
-    working: true
+    working: false
     file: "App.js"
-    stuck_count: 0
+    stuck_count: 1
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "Added getVideoType() helper function to detect YouTube URLs, local file paths, and external URLs. Also added getFullVideoUrl() to construct proper video URLs for local files."
+      - working: false
+        agent: "testing"
+        comment: "CANNOT TEST: Video type detection cannot be tested due to frontend navigation issue. Backend data shows mixed content types working correctly - YouTube URLs (https://www.youtube.com/watch?v=dQw4w9WgXcQ) and local files (uploads/*.mp4) are properly stored. Code review shows getVideoType() function correctly identifies YouTube, local, and external videos with appropriate styling (red for YouTube, purple for local). Implementation appears correct but needs navigation fix to verify display functionality."
 
 metadata:
   created_by: "main_agent"
