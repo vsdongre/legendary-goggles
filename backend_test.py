@@ -1,6 +1,8 @@
 import requests
 import sys
 import json
+import os
+import tempfile
 from datetime import datetime
 
 class ELearningAPITester:
