@@ -483,6 +483,9 @@ function App() {
     const [localTitle, setLocalTitle] = useState(uploadData.title);
     const [localContentType, setLocalContentType] = useState(uploadData.content_type);
     const [localContentData, setLocalContentData] = useState(uploadData.content_data);
+    const [uploadMode, setUploadMode] = useState('text'); // 'text' or 'file'
+    const [selectedFile, setSelectedFile] = useState(null);
+    const [isUploading, setIsUploading] = useState(false);
     
     // Sync with parent state only when modal opens
     useEffect(() => {
@@ -490,6 +493,9 @@ function App() {
         setLocalTitle(uploadData.title);
         setLocalContentType(uploadData.content_type);
         setLocalContentData(uploadData.content_data);
+        setUploadMode('text');
+        setSelectedFile(null);
+        setIsUploading(false);
       }
     }, [showUploadModal]);
 
