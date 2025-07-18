@@ -42,6 +42,54 @@ os.makedirs("uploads/images", exist_ok=True)
 os.makedirs("uploads/documents", exist_ok=True)
 
 # Custom endpoint to serve video files with proper content-type
+@app.get("/api/media/{file_path:path}")
+@app.head("/api/media/{file_path:path}")
+async def serve_media_file(file_path: str):
+    from fastapi.responses import FileResponse
+    import mimetypes
+    
+    # Remove 'uploads/' prefix if present since we're serving from uploads directory
+    if file_path.startswith('uploads/'):
+        file_path = file_path[8:]
+    
+    file_full_path = f"uploads/{file_path}"
+    
+    # Check if file exists
+    if not os.path.exists(file_full_path):
+        raise HTTPException(status_code=404, detail="File not found")
+    
+    # Get MIME type
+    mime_type, _ = mimetypes.guess_type(file_full_path)
+    if mime_type is None:
+        if file_path.endswith('.mp4'):
+            mime_type = 'video/mp4'
+        elif file_path.endswith('.avi'):
+            mime_type = 'video/x-msvideo'
+        elif file_path.endswith('.mov'):
+            mime_type = 'video/quicktime'
+        elif file_path.endswith('.webm'):
+            mime_type = 'video/webm'
+        elif file_path.endswith('.jpg') or file_path.endswith('.jpeg'):
+            mime_type = 'image/jpeg'
+        elif file_path.endswith('.png'):
+            mime_type = 'image/png'
+        elif file_path.endswith('.pdf'):
+            mime_type = 'application/pdf'
+        else:
+            mime_type = 'application/octet-stream'
+    
+    return FileResponse(
+        file_full_path,
+        media_type=mime_type,
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
+            "Access-Control-Allow-Headers": "*",
+            "Cache-Control": "public, max-age=3600",
+        }
+    )
+
+# Keep the original uploads endpoint for backward compatibility
 @app.get("/uploads/{file_path:path}")
 @app.head("/uploads/{file_path:path}")
 async def serve_uploaded_file(file_path: str):
