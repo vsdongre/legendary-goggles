@@ -23,6 +23,10 @@ function App() {
   });
   const [showUploadModal, setShowUploadModal] = useState(false);
 
+  // Fix for input focus issues
+  const titleInputRef = useRef(null);
+  const contentInputRef = useRef(null);
+
   // Check for existing token on app load
   useEffect(() => {
     const token = localStorage.getItem('token');
