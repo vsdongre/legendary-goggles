@@ -805,7 +805,67 @@ function App() {
                         <span className="inline-block bg-gray-100 text-gray-800 px-2 py-1 rounded text-sm mb-2">
                           {content.content_type}
                         </span>
-                        <p className="text-gray-700 text-sm">{content.content_data}</p>
+                        
+                        {/* Video Content */}
+                        {content.content_type === 'video' ? (
+                          <div className="mt-3">
+                            <div className="aspect-w-16 aspect-h-9 bg-gray-100 rounded-lg overflow-hidden">
+                              <iframe
+                                src={content.content_data.includes('youtube.com') || content.content_data.includes('youtu.be') ? 
+                                  content.content_data.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/') : 
+                                  content.content_data}
+                                title={content.title}
+                                className="w-full h-64 rounded-lg"
+                                allowFullScreen
+                                frameBorder="0"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                              />
+                            </div>
+                            <p className="text-xs text-gray-500 mt-2">📹 {content.content_data}</p>
+                          </div>
+                        ) : 
+                        
+                        /* Image Content */
+                        content.content_type === 'image' ? (
+                          <div className="mt-3">
+                            <img
+                              src={content.content_data}
+                              alt={content.title}
+                              className="w-full h-48 object-cover rounded-lg"
+                              onError={(e) => {
+                                e.target.style.display = 'none';
+                                e.target.nextSibling.style.display = 'block';
+                              }}
+                            />
+                            <div className="hidden p-4 bg-gray-100 rounded-lg text-center">
+                              <p className="text-gray-600">🖼️ Image: {content.content_data}</p>
+                            </div>
+                          </div>
+                        ) : 
+                        
+                        /* Document Content */
+                        content.content_type === 'document' ? (
+                          <div className="mt-3">
+                            <a
+                              href={content.content_data}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-800 rounded-lg hover:bg-blue-200 transition-colors"
+                            >
+                              📄 View Document
+                            </a>
+                            <p className="text-xs text-gray-500 mt-2">{content.content_data}</p>
+                          </div>
+                        ) : 
+                        
+                        /* Text Content */
+                        (
+                          <div className="mt-3">
+                            <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-wrap">
+                              {content.content_data}
+                            </p>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
