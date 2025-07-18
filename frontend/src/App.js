@@ -240,6 +240,7 @@ function App() {
       if (response.ok) {
         alert('Content uploaded successfully!');
         setUploadData({ title: '', content_type: 'text', content_data: '' });
+        setShowUploadModal(false);
         // Refresh chapter details
         fetchChapterDetails(selectedChapter.id);
       } else {
