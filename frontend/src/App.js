@@ -506,41 +506,74 @@ function App() {
         return;
       }
 
+      setIsUploading(true);
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE_URL}/api/content/upload`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({
-            chapter_id: selectedChapter.id,
-            title: localTitle,
-            content_type: localContentType,
-            content_data: localContentData
-          }),
-        });
-
-        if (response.ok) {
-          alert('Content uploaded successfully!');
-          setLocalTitle('');
-          setLocalContentType('text');
-          setLocalContentData('');
-          setUploadData({ title: '', content_type: 'text', content_data: '' });
-          setShowUploadModal(false);
-          // Refresh chapter details
-          if (selectedChapter) {
-            fetchChapterDetails(selectedChapter.id);
+        
+        if (uploadMode === 'file' && selectedFile) {
+          // Handle file upload
+          const formData = new FormData();
+          formData.append('file', selectedFile);
+          formData.append('chapter_id', selectedChapter.id);
+          formData.append('title', localTitle);
+          
+          const response = await fetch(`${API_BASE_URL}/api/content/upload-file`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`
+            },
+            body: formData
+          });
+          
+          if (response.ok) {
+            alert('File uploaded successfully!');
+          } else {
+            const errorData = await response.json();
+            alert(errorData.detail || 'File upload failed');
           }
         } else {
-          const errorData = await response.json();
-          alert(errorData.detail || 'Upload failed');
+          // Handle text/URL upload
+          const response = await fetch(`${API_BASE_URL}/api/content/upload`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              chapter_id: selectedChapter.id,
+              title: localTitle,
+              content_type: localContentType,
+              content_data: localContentData
+            }),
+          });
+
+          if (response.ok) {
+            alert('Content uploaded successfully!');
+          } else {
+            const errorData = await response.json();
+            alert(errorData.detail || 'Upload failed');
+          }
+        }
+        
+        // Reset form
+        setLocalTitle('');
+        setLocalContentType('text');
+        setLocalContentData('');
+        setSelectedFile(null);
+        setUploadMode('text');
+        setUploadData({ title: '', content_type: 'text', content_data: '' });
+        setShowUploadModal(false);
+        
+        // Refresh chapter details
+        if (selectedChapter) {
+          fetchChapterDetails(selectedChapter.id);
         }
       } catch (err) {
         alert('Network error. Please try again.');
+      } finally {
+        setIsUploading(false);
       }
-    }, [localTitle, localContentType, localContentData, selectedChapter]);
+    }, [localTitle, localContentType, localContentData, selectedChapter, uploadMode, selectedFile]);
 
     const handleClose = useCallback(() => {
       setShowUploadModal(false);
