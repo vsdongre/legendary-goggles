@@ -825,114 +825,60 @@ function App() {
                         {/* Video Content */}
                         {content.content_type === 'video' ? (
                           <div className="mt-3">
-                            <div className="bg-gray-100 rounded-lg p-4">
-                              <div className="aspect-w-16 aspect-h-9 bg-black rounded-lg overflow-hidden mb-3">
-                                <iframe
-                                  src={(() => {
-                                    let url = content.content_data.trim();
-                                    console.log('Processing video URL:', url);
-                                    
-                                    // Extract video ID from different YouTube URL formats
-                                    let videoId = null;
-                                    
-                                    // Handle youtube.com/watch?v= format
-                                    if (url.includes('youtube.com/watch?v=')) {
-                                      videoId = url.split('v=')[1]?.split('&')[0];
-                                    }
-                                    // Handle youtu.be/ format  
-                                    else if (url.includes('youtu.be/')) {
-                                      videoId = url.split('youtu.be/')[1]?.split('?')[0];
-                                    }
-                                    // Handle youtube.com/embed/ format
-                                    else if (url.includes('youtube.com/embed/')) {
-                                      videoId = url.split('embed/')[1]?.split('?')[0];
-                                    }
-                                    
-                                    if (videoId) {
-                                      const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=0&controls=1&modestbranding=1&rel=0&showinfo=0&fs=1&cc_load_policy=0&iv_load_policy=3&autohide=0`;
-                                      console.log('Generated embed URL:', embedUrl);
-                                      return embedUrl;
-                                    }
-                                    
-                                    // For other video URLs, return as-is
-                                    return url;
-                                  })()}
-                                  title={content.title}
-                                  className="w-full h-64 border-0"
-                                  allowFullScreen
-                                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                                  referrerPolicy="strict-origin-when-cross-origin"
-                                  loading="lazy"
-                                  sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
-                                />
+                            <div className="bg-gradient-to-r from-red-50 to-red-100 rounded-lg p-4 border border-red-200">
+                              {/* Video Preview */}
+                              <div className="flex items-center space-x-4 mb-3">
+                                <div className="w-16 h-16 bg-red-500 rounded-lg flex items-center justify-center text-white text-2xl">
+                                  🎥
+                                </div>
+                                <div>
+                                  <h6 className="font-medium text-gray-900">{content.title}</h6>
+                                  <p className="text-sm text-gray-600">Click to watch video</p>
+                                </div>
                               </div>
                               
-                              {/* Video Info and Controls */}
-                              <div className="flex flex-col space-y-2">
-                                <h6 className="font-medium text-gray-900">{content.title}</h6>
-                                <p className="text-xs text-gray-500">📹 {content.content_data}</p>
+                              {/* Simple Working Video Link */}
+                              <div className="space-y-2">
+                                <a 
+                                  href={content.content_data} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer" 
+                                  className="block w-full bg-red-500 hover:bg-red-600 text-white text-center py-3 px-4 rounded-lg font-medium transition-colors duration-200"
+                                >
+                                  ▶️ WATCH VIDEO NOW
+                                </a>
                                 
-                                {/* Action Buttons */}
-                                <div className="flex flex-wrap gap-2 text-xs">
-                                  <a 
-                                    href={content.content_data} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer" 
-                                    className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
-                                  >
-                                    🔗 Open in YouTube
-                                  </a>
-                                  <button 
-                                    onClick={() => {
-                                      // Reload the iframe
-                                      const iframe = document.querySelector(`iframe[title="${content.title}"]`);
-                                      if (iframe) {
-                                        const currentSrc = iframe.src;
-                                        iframe.src = '';
-                                        setTimeout(() => {
-                                          iframe.src = currentSrc;
-                                        }, 100);
-                                      }
-                                    }}
-                                    className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
-                                  >
-                                    🔄 Reload Player
-                                  </button>
-                                  <button 
-                                    onClick={() => {
-                                      // Try to play the video
-                                      const iframe = document.querySelector(`iframe[title="${content.title}"]`);
-                                      if (iframe && iframe.contentWindow) {
-                                        try {
-                                          iframe.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
-                                        } catch (e) {
-                                          console.log('Could not control video playback:', e);
-                                        }
-                                      }
-                                    }}
-                                    className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
-                                  >
-                                    ▶️ Try Play
-                                  </button>
-                                  <button 
-                                    onClick={() => {
-                                      // Create a direct video link
-                                      const videoContainer = document.querySelector(`iframe[title="${content.title}"]`).parentElement;
-                                      const videoId = content.content_data.includes('youtube.com/watch?v=') ? 
-                                        content.content_data.split('v=')[1].split('&')[0] :
-                                        content.content_data.includes('youtu.be/') ?
-                                        content.content_data.split('youtu.be/')[1].split('?')[0] : null;
-                                      
-                                      if (videoId) {
-                                        const directUrl = `https://www.youtube.com/watch?v=${videoId}`;
-                                        window.open(directUrl, '_blank');
-                                      }
-                                    }}
-                                    className="px-3 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors"
-                                  >
-                                    🚀 Direct Link
-                                  </button>
+                                <div className="text-xs text-gray-500 text-center">
+                                  🔗 Video will open in new tab: {content.content_data}
                                 </div>
+                                
+                                {/* Embedded iframe as backup */}
+                                <details className="mt-3">
+                                  <summary className="cursor-pointer text-sm text-blue-600 hover:text-blue-800">
+                                    📺 Try embedded player (may not work for all videos)
+                                  </summary>
+                                  <div className="mt-2 bg-black rounded-lg overflow-hidden">
+                                    <iframe
+                                      src={(() => {
+                                        let url = content.content_data.trim();
+                                        if (url.includes('youtube.com/watch?v=')) {
+                                          const videoId = url.split('v=')[1]?.split('&')[0];
+                                          return `https://www.youtube.com/embed/${videoId}?autoplay=0&controls=1&modestbranding=1&rel=0`;
+                                        }
+                                        if (url.includes('youtu.be/')) {
+                                          const videoId = url.split('youtu.be/')[1]?.split('?')[0];
+                                          return `https://www.youtube.com/embed/${videoId}?autoplay=0&controls=1&modestbranding=1&rel=0`;
+                                        }
+                                        return url;
+                                      })()}
+                                      title={content.title}
+                                      className="w-full h-48"
+                                      allowFullScreen
+                                      frameBorder="0"
+                                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                    />
+                                  </div>
+                                </details>
                               </div>
                             </div>
                           </div>
