@@ -140,6 +140,17 @@ function App() {
       
       if (response.ok) {
         const data = await response.json();
+        
+        // Fetch content for this chapter
+        const contentResponse = await fetch(`${API_BASE_URL}/api/content/${chapterId}`, {
+          headers: { 'Authorization': `Bearer ${token}` },
+        });
+        
+        if (contentResponse.ok) {
+          const contentData = await contentResponse.json();
+          data.content = contentData;
+        }
+        
         setChapterDetails(data);
       }
     } catch (err) {
