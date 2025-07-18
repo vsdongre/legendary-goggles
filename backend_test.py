@@ -13,6 +13,11 @@ class ELearningAPITester:
         self.test_user_email = f"test_user_{datetime.now().strftime('%H%M%S')}@example.com"
         self.test_user_password = "TestPass123!"
         self.test_username = f"testuser_{datetime.now().strftime('%H%M%S')}"
+        
+        # Store IDs for hierarchical testing
+        self.class_ids = []
+        self.subject_ids = []
+        self.chapter_ids = []
 
     def run_test(self, name, method, endpoint, expected_status, data=None, headers=None):
         """Run a single API test"""
@@ -64,16 +69,39 @@ class ELearningAPITester:
         """Test the root endpoint"""
         return self.run_test("Root Endpoint", "GET", "", 200)
 
-    def test_get_courses(self):
-        """Test getting all courses"""
-        success, response = self.run_test("Get All Courses", "GET", "api/courses", 200)
+    def test_get_classes(self):
+        """Test getting all classes"""
+        success, response = self.run_test("Get All Classes", "GET", "api/classes", 200)
         if success and isinstance(response, list):
-            print(f"   Found {len(response)} courses")
+            print(f"   Found {len(response)} classes")
+            self.class_ids = [cls['id'] for cls in response]
             if len(response) > 0:
-                course = response[0]
-                print(f"   Sample course: {course.get('title', 'No title')}")
+                class_item = response[0]
+                print(f"   Sample class: {class_item.get('name', 'No name')}")
                 return True, response
         return success, response
+
+    def test_demo_login(self):
+        """Test demo user login"""
+        login_data = {
+            "email": "demo@example.com",
+            "password": "Demo123!"
+        }
+        
+        success, response = self.run_test(
+            "Demo User Login",
+            "POST",
+            "api/auth/login",
+            200,
+            data=login_data
+        )
+        
+        if success and 'access_token' in response:
+            self.token = response['access_token']
+            self.user_id = response['user']['id']
+            print(f"   Demo User ID: {self.user_id}")
+            return True
+        return False
 
     def test_signup(self):
         """Test user signup"""
@@ -138,80 +166,91 @@ class ELearningAPITester:
             return True
         return False
 
-    def test_enroll_in_course(self, course_id):
-        """Test enrolling in a course"""
-        if not self.token:
-            print("❌ No token available for enrollment test")
-            return False
-            
-        enrollment_data = {
-            "course_id": course_id
-        }
-        
+    def test_get_subjects_by_class(self, class_id, class_name):
+        """Test getting subjects for a specific class"""
         success, response = self.run_test(
-            "Enroll in Course",
-            "POST",
-            "api/enrollments",
-            200,
-            data=enrollment_data
-        )
-        
-        return success
-
-    def test_get_user_enrollments(self):
-        """Test getting user enrollments"""
-        if not self.token or not self.user_id:
-            print("❌ No token or user_id available for enrollments test")
-            return False, []
-            
-        success, response = self.run_test(
-            "Get User Enrollments",
+            f"Get Subjects for {class_name}",
             "GET",
-            f"api/enrollments/user/{self.user_id}",
+            f"api/subjects/{class_id}",
             200
         )
         
         if success and isinstance(response, list):
-            print(f"   Found {len(response)} enrollments")
-            return True, response
-        return False, []
+            print(f"   Found {len(response)} subjects for {class_name}")
+            if len(response) > 0:
+                subject_ids = [subj['id'] for subj in response]
+                self.subject_ids.extend(subject_ids)
+                for subject in response:
+                    print(f"     - {subject.get('name', 'No name')}")
+                return True, response
+        return success, response
 
-    def test_update_progress(self, course_id, lesson_id):
-        """Test updating lesson progress"""
-        if not self.token:
-            print("❌ No token available for progress test")
-            return False
-            
-        progress_data = {
-            "course_id": course_id,
-            "lesson_id": lesson_id,
-            "completed": True
-        }
-        
+    def test_get_chapters_by_subject(self, subject_id, subject_name):
+        """Test getting chapters for a specific subject"""
         success, response = self.run_test(
-            "Update Progress",
-            "POST",
-            "api/progress",
-            200,
-            data=progress_data
-        )
-        
-        return success
-
-    def test_get_course_progress(self, course_id):
-        """Test getting user course progress"""
-        if not self.token or not self.user_id:
-            print("❌ No token or user_id available for progress test")
-            return False
-            
-        success, response = self.run_test(
-            "Get Course Progress",
+            f"Get Chapters for {subject_name}",
             "GET",
-            f"api/progress/user/{self.user_id}/course/{course_id}",
+            f"api/chapters/{subject_id}",
             200
         )
         
-        return success
+        if success and isinstance(response, list):
+            print(f"   Found {len(response)} chapters for {subject_name}")
+            if len(response) > 0:
+                chapter_ids = [chap['id'] for chap in response]
+                self.chapter_ids.extend(chapter_ids)
+                for chapter in response:
+                    print(f"     - {chapter.get('name', 'No name')}")
+                return True, response
+        return success, response
+
+    def test_get_chapter_details(self, chapter_id, chapter_name):
+        """Test getting detailed chapter information"""
+        success, response = self.run_test(
+            f"Get Chapter Details for {chapter_name}",
+            "GET",
+            f"api/chapter/{chapter_id}",
+            200
+        )
+        
+        if success and isinstance(response, dict):
+            chapter = response.get('chapter', {})
+            subject = response.get('subject', {})
+            class_info = response.get('class', {})
+            content = response.get('content', [])
+            
+            print(f"   Chapter: {chapter.get('name', 'No name')}")
+            print(f"   Subject: {subject.get('name', 'No name')}")
+            print(f"   Class: {class_info.get('name', 'No name')}")
+            print(f"   Content items: {len(content)}")
+            return True, response
+        return success, response
+
+    def test_content_upload(self, chapter_id):
+        """Test content upload functionality"""
+        if not self.token:
+            print("❌ No token available for content upload test")
+            return False
+            
+        upload_data = {
+            "chapter_id": chapter_id,
+            "title": "Test Content Upload",
+            "content_type": "text",
+            "content_data": "This is a test content upload to verify the API functionality."
+        }
+        
+        success, response = self.run_test(
+            "Content Upload",
+            "POST",
+            "api/content/upload",
+            200,
+            data=upload_data
+        )
+        
+        if success and 'content_id' in response:
+            print(f"   Content ID: {response['content_id']}")
+            return True
+        return False
 
 def main():
     print("🚀 Starting E-Learning Platform API Tests")
