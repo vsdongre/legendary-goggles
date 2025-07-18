@@ -138,15 +138,18 @@ backend:
 frontend:
   - task: "File Upload Interface"
     implemented: true
-    working: true
+    working: false
     file: "App.js"
-    stuck_count: 0
+    stuck_count: 1
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "Added file upload interface with drag-and-drop, upload mode selection (text/file), and file validation. Upload modal now supports both text input and file uploads."
+      - working: false
+        agent: "testing"
+        comment: "CRITICAL ISSUE: Frontend navigation is broken - subjects and chapters are not loading in the UI despite backend APIs returning correct data. Cannot reach chapter content to test upload interface. Backend APIs confirmed working with curl tests showing classes, subjects, and chapters exist with content. Issue appears to be in React state management for class/subject/chapter selection. Upload modal interface code exists but cannot be accessed due to navigation failure."
 
   - task: "Local Video Playback"
     implemented: true
