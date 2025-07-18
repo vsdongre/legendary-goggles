@@ -873,6 +873,18 @@ function App() {
                               <a href={content.content_data} target="_blank" rel="noopener noreferrer" className="hover:underline">
                                 🔗 Open in new tab
                               </a>
+                              <span className="mx-2">•</span>
+                              <button 
+                                onClick={() => {
+                                  const iframe = document.querySelector(`iframe[title="${content.title}"]`);
+                                  if (iframe) {
+                                    iframe.src = iframe.src; // Reload iframe
+                                  }
+                                }}
+                                className="text-blue-600 hover:underline"
+                              >
+                                🔄 Reload video
+                              </button>
                             </div>
                           </div>
                         ) : 
