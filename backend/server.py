@@ -171,8 +171,13 @@ async def login(user: UserLogin):
     if not db_user:
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
+    # Check for both password and password_hash fields for backward compatibility
+    password_hash = db_user.get("password") or db_user.get("password_hash")
+    if not password_hash:
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    
     # Verify password
-    if not bcrypt.checkpw(user.password.encode('utf-8'), db_user["password"].encode('utf-8')):
+    if not bcrypt.checkpw(user.password.encode('utf-8'), password_hash.encode('utf-8')):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
     # Create access token
