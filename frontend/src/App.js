@@ -814,14 +814,31 @@ function App() {
                           <div className="mt-3">
                             <div className="aspect-w-16 aspect-h-9 bg-gray-100 rounded-lg overflow-hidden">
                               <iframe
-                                src={content.content_data.includes('youtube.com') || content.content_data.includes('youtu.be') ? 
-                                  content.content_data.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/') : 
-                                  content.content_data}
+                                src={(() => {
+                                  let url = content.content_data;
+                                  // Convert YouTube watch URLs to embed URLs
+                                  if (url.includes('youtube.com/watch?v=')) {
+                                    const videoId = url.split('watch?v=')[1].split('&')[0];
+                                    return `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1&playsinline=1`;
+                                  }
+                                  // Convert youtu.be URLs to embed URLs
+                                  if (url.includes('youtu.be/')) {
+                                    const videoId = url.split('youtu.be/')[1].split('?')[0];
+                                    return `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1&playsinline=1`;
+                                  }
+                                  // If already an embed URL, add parameters
+                                  if (url.includes('youtube.com/embed/')) {
+                                    return `${url}?rel=0&modestbranding=1&playsinline=1`;
+                                  }
+                                  // For other video URLs, use as-is
+                                  return url;
+                                })()}
                                 title={content.title}
                                 className="w-full h-64 rounded-lg"
                                 allowFullScreen
                                 frameBorder="0"
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                referrerPolicy="strict-origin-when-cross-origin"
                               />
                             </div>
                             <p className="text-xs text-gray-500 mt-2">📹 {content.content_data}</p>
