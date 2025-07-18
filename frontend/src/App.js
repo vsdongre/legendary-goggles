@@ -825,66 +825,97 @@ function App() {
                         {/* Video Content */}
                         {content.content_type === 'video' ? (
                           <div className="mt-3">
-                            <div className="aspect-w-16 aspect-h-9 bg-gray-100 rounded-lg overflow-hidden">
-                              <iframe
-                                src={(() => {
-                                  let url = content.content_data.trim();
-                                  console.log('Original URL:', url);
-                                  
-                                  // Handle YouTube watch URLs
-                                  if (url.includes('youtube.com/watch?v=')) {
-                                    const videoId = url.match(/[?&]v=([^&]+)/)?.[1];
+                            <div className="bg-gray-100 rounded-lg p-4">
+                              <div className="aspect-w-16 aspect-h-9 bg-black rounded-lg overflow-hidden mb-3">
+                                <iframe
+                                  src={(() => {
+                                    let url = content.content_data.trim();
+                                    console.log('Processing video URL:', url);
+                                    
+                                    // Extract video ID from different YouTube URL formats
+                                    let videoId = null;
+                                    
+                                    // Handle youtube.com/watch?v= format
+                                    if (url.includes('youtube.com/watch?v=')) {
+                                      videoId = url.split('v=')[1]?.split('&')[0];
+                                    }
+                                    // Handle youtu.be/ format  
+                                    else if (url.includes('youtu.be/')) {
+                                      videoId = url.split('youtu.be/')[1]?.split('?')[0];
+                                    }
+                                    // Handle youtube.com/embed/ format
+                                    else if (url.includes('youtube.com/embed/')) {
+                                      videoId = url.split('embed/')[1]?.split('?')[0];
+                                    }
+                                    
                                     if (videoId) {
-                                      const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=0&mute=0&controls=1&rel=0&modestbranding=1&playsinline=1&enablejsapi=1`;
-                                      console.log('Converted to embed:', embedUrl);
+                                      const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=0&controls=1&modestbranding=1&rel=0&showinfo=0&fs=1&cc_load_policy=0&iv_load_policy=3&autohide=0`;
+                                      console.log('Generated embed URL:', embedUrl);
                                       return embedUrl;
                                     }
-                                  }
-                                  
-                                  // Handle youtu.be URLs
-                                  if (url.includes('youtu.be/')) {
-                                    const videoId = url.split('youtu.be/')[1]?.split('?')[0];
-                                    if (videoId) {
-                                      const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=0&mute=0&controls=1&rel=0&modestbranding=1&playsinline=1&enablejsapi=1`;
-                                      console.log('Converted youtu.be to embed:', embedUrl);
-                                      return embedUrl;
-                                    }
-                                  }
-                                  
-                                  // Handle already embed URLs
-                                  if (url.includes('youtube.com/embed/')) {
-                                    return url.includes('?') ? url : `${url}?autoplay=0&mute=0&controls=1&rel=0&modestbranding=1&playsinline=1&enablejsapi=1`;
-                                  }
-                                  
-                                  // For other video URLs (Vimeo, etc.)
-                                  return url;
-                                })()}
-                                title={content.title}
-                                className="w-full h-64 rounded-lg"
-                                allowFullScreen
-                                frameBorder="0"
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                                referrerPolicy="strict-origin-when-cross-origin"
-                                loading="lazy"
-                              />
-                            </div>
-                            <p className="text-xs text-gray-500 mt-2">📹 {content.content_data}</p>
-                            <div className="mt-2 text-xs text-blue-600">
-                              <a href={content.content_data} target="_blank" rel="noopener noreferrer" className="hover:underline">
-                                🔗 Open in new tab
-                              </a>
-                              <span className="mx-2">•</span>
-                              <button 
-                                onClick={() => {
-                                  const iframe = document.querySelector(`iframe[title="${content.title}"]`);
-                                  if (iframe) {
-                                    iframe.src = iframe.src; // Reload iframe
-                                  }
-                                }}
-                                className="text-blue-600 hover:underline"
-                              >
-                                🔄 Reload video
-                              </button>
+                                    
+                                    // For other video URLs, return as-is
+                                    return url;
+                                  })()}
+                                  title={content.title}
+                                  className="w-full h-64 border-0"
+                                  allowFullScreen
+                                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                  referrerPolicy="strict-origin-when-cross-origin"
+                                  loading="lazy"
+                                  sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
+                                />
+                              </div>
+                              
+                              {/* Video Info and Controls */}
+                              <div className="flex flex-col space-y-2">
+                                <h6 className="font-medium text-gray-900">{content.title}</h6>
+                                <p className="text-xs text-gray-500">📹 {content.content_data}</p>
+                                
+                                {/* Action Buttons */}
+                                <div className="flex flex-wrap gap-2 text-xs">
+                                  <a 
+                                    href={content.content_data} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer" 
+                                    className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                                  >
+                                    🔗 Open in YouTube
+                                  </a>
+                                  <button 
+                                    onClick={() => {
+                                      // Reload the iframe
+                                      const iframe = document.querySelector(`iframe[title="${content.title}"]`);
+                                      if (iframe) {
+                                        const currentSrc = iframe.src;
+                                        iframe.src = '';
+                                        setTimeout(() => {
+                                          iframe.src = currentSrc;
+                                        }, 100);
+                                      }
+                                    }}
+                                    className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
+                                  >
+                                    🔄 Reload Player
+                                  </button>
+                                  <button 
+                                    onClick={() => {
+                                      // Try to play the video
+                                      const iframe = document.querySelector(`iframe[title="${content.title}"]`);
+                                      if (iframe && iframe.contentWindow) {
+                                        try {
+                                          iframe.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
+                                        } catch (e) {
+                                          console.log('Could not control video playback:', e);
+                                        }
+                                      }
+                                    }}
+                                    className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
+                                  >
+                                    ▶️ Try Play
+                                  </button>
+                                </div>
+                              </div>
                             </div>
                           </div>
                         ) : 
