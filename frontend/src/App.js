@@ -825,60 +825,72 @@ function App() {
                         {/* Video Content */}
                         {content.content_type === 'video' ? (
                           <div className="mt-3">
-                            <div className="bg-gradient-to-r from-red-50 to-red-100 rounded-lg p-4 border border-red-200">
-                              {/* Video Preview */}
-                              <div className="flex items-center space-x-4 mb-3">
-                                <div className="w-16 h-16 bg-red-500 rounded-lg flex items-center justify-center text-white text-2xl">
-                                  🎥
+                            <div className="bg-gradient-to-r from-red-500 to-red-600 rounded-lg p-6 text-white">
+                              {/* Video Icon and Title */}
+                              <div className="flex items-center space-x-4 mb-4">
+                                <div className="w-12 h-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center text-2xl">
+                                  ▶️
                                 </div>
                                 <div>
-                                  <h6 className="font-medium text-gray-900">{content.title}</h6>
-                                  <p className="text-sm text-gray-600">Click to watch video</p>
+                                  <h6 className="font-bold text-lg">{content.title}</h6>
+                                  <p className="text-red-100 text-sm">Video Content</p>
                                 </div>
                               </div>
                               
-                              {/* Simple Working Video Link */}
-                              <div className="space-y-2">
-                                <a 
-                                  href={content.content_data} 
-                                  target="_blank" 
-                                  rel="noopener noreferrer" 
-                                  className="block w-full bg-red-500 hover:bg-red-600 text-white text-center py-3 px-4 rounded-lg font-medium transition-colors duration-200"
+                              {/* Large Watch Button */}
+                              <a 
+                                href={content.content_data} 
+                                target="_blank" 
+                                rel="noopener noreferrer" 
+                                className="block w-full bg-white text-red-600 text-center py-4 px-6 rounded-lg font-bold text-lg hover:bg-red-50 transition-colors duration-200 shadow-lg"
+                              >
+                                🎥 WATCH VIDEO NOW
+                              </a>
+                              
+                              {/* Video URL Display */}
+                              <div className="mt-3 text-center">
+                                <p className="text-red-100 text-sm">
+                                  📺 Video will open in YouTube
+                                </p>
+                                <p className="text-red-200 text-xs mt-1 break-all">
+                                  {content.content_data}
+                                </p>
+                              </div>
+                              
+                              {/* Additional Actions */}
+                              <div className="mt-4 flex justify-center space-x-2">
+                                <button 
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(content.content_data);
+                                    alert('Video URL copied to clipboard!');
+                                  }}
+                                  className="px-4 py-2 bg-white bg-opacity-20 text-white rounded hover:bg-opacity-30 transition-colors text-sm"
                                 >
-                                  ▶️ WATCH VIDEO NOW
-                                </a>
-                                
-                                <div className="text-xs text-gray-500 text-center">
-                                  🔗 Video will open in new tab: {content.content_data}
-                                </div>
-                                
-                                {/* Embedded iframe as backup */}
-                                <details className="mt-3">
-                                  <summary className="cursor-pointer text-sm text-blue-600 hover:text-blue-800">
-                                    📺 Try embedded player (may not work for all videos)
-                                  </summary>
-                                  <div className="mt-2 bg-black rounded-lg overflow-hidden">
-                                    <iframe
-                                      src={(() => {
-                                        let url = content.content_data.trim();
-                                        if (url.includes('youtube.com/watch?v=')) {
-                                          const videoId = url.split('v=')[1]?.split('&')[0];
-                                          return `https://www.youtube.com/embed/${videoId}?autoplay=0&controls=1&modestbranding=1&rel=0`;
-                                        }
-                                        if (url.includes('youtu.be/')) {
-                                          const videoId = url.split('youtu.be/')[1]?.split('?')[0];
-                                          return `https://www.youtube.com/embed/${videoId}?autoplay=0&controls=1&modestbranding=1&rel=0`;
-                                        }
-                                        return url;
-                                      })()}
-                                      title={content.title}
-                                      className="w-full h-48"
-                                      allowFullScreen
-                                      frameBorder="0"
-                                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                    />
-                                  </div>
-                                </details>
+                                  📋 Copy URL
+                                </button>
+                                <button 
+                                  onClick={() => {
+                                    const videoId = content.content_data.includes('youtube.com/watch?v=') ? 
+                                      content.content_data.split('v=')[1].split('&')[0] :
+                                      content.content_data.includes('youtu.be/') ?
+                                      content.content_data.split('youtu.be/')[1].split('?')[0] : null;
+                                    
+                                    if (videoId) {
+                                      const shareUrl = `https://www.youtube.com/watch?v=${videoId}`;
+                                      if (navigator.share) {
+                                        navigator.share({
+                                          title: content.title,
+                                          url: shareUrl
+                                        });
+                                      } else {
+                                        alert(`Share this video: ${shareUrl}`);
+                                      }
+                                    }
+                                  }}
+                                  className="px-4 py-2 bg-white bg-opacity-20 text-white rounded hover:bg-opacity-30 transition-colors text-sm"
+                                >
+                                  📤 Share
+                                </button>
                               </div>
                             </div>
                           </div>
