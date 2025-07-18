@@ -914,6 +914,24 @@ function App() {
                                   >
                                     ▶️ Try Play
                                   </button>
+                                  <button 
+                                    onClick={() => {
+                                      // Create a direct video link
+                                      const videoContainer = document.querySelector(`iframe[title="${content.title}"]`).parentElement;
+                                      const videoId = content.content_data.includes('youtube.com/watch?v=') ? 
+                                        content.content_data.split('v=')[1].split('&')[0] :
+                                        content.content_data.includes('youtu.be/') ?
+                                        content.content_data.split('youtu.be/')[1].split('?')[0] : null;
+                                      
+                                      if (videoId) {
+                                        const directUrl = `https://www.youtube.com/watch?v=${videoId}`;
+                                        window.open(directUrl, '_blank');
+                                      }
+                                    }}
+                                    className="px-3 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors"
+                                  >
+                                    🚀 Direct Link
+                                  </button>
                                 </div>
                               </div>
                             </div>
