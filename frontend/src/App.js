@@ -234,7 +234,7 @@ function App() {
     setUploadData(prev => ({...prev, content_data: value}));
   }, []);
 
-  const handleUpload = async (e) => {
+  const handleUpload = useCallback(async (e) => {
     e.preventDefault();
     if (!selectedChapter) {
       alert('Please select a chapter first');
@@ -262,7 +262,9 @@ function App() {
         setUploadData({ title: '', content_type: 'text', content_data: '' });
         setShowUploadModal(false);
         // Refresh chapter details
-        fetchChapterDetails(selectedChapter.id);
+        if (selectedChapter) {
+          fetchChapterDetails(selectedChapter.id);
+        }
       } else {
         const errorData = await response.json();
         alert(errorData.detail || 'Upload failed');
@@ -270,7 +272,7 @@ function App() {
     } catch (err) {
       alert('Network error. Please try again.');
     }
-  };
+  }, [selectedChapter, uploadData]);
 
   const markChapterComplete = async (chapterId) => {
     try {
