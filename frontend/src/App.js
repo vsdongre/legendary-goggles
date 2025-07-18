@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import './App.css';
 
-const API_BASE_URL = process.env.REACT_APP_BACKEND_URL;
+const API_BASE_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
 
 function App() {
   const [user, setUser] = useState(null);
-  const [currentView, setCurrentView] = useState('login');
   const [classes, setClasses] = useState([]);
   const [subjects, setSubjects] = useState([]);
   const [chapters, setChapters] = useState([]);
@@ -14,122 +13,22 @@ function App() {
   const [selectedChapter, setSelectedChapter] = useState(null);
   const [chapterDetails, setChapterDetails] = useState(null);
   const [userProgress, setUserProgress] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [uploadData, setUploadData] = useState({
-    title: '',
-    content_type: 'text',
-    content_data: ''
-  });
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [contentData, setContentData] = useState({
+    title: '',
+    content_type: 'document',
+    file_path: '',
+    description: ''
+  });
 
-  // Fix for input focus issues
   const titleInputRef = useRef(null);
-  const contentInputRef = useRef(null);
 
-  // Check for existing token on app load
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      fetchUserInfo(token);
-    }
-  }, []);
-
-  const fetchUserInfo = async (token) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/user`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      if (response.ok) {
-        const userData = await response.json();
-        setUser(userData);
-        setCurrentView('dashboard');
-        fetchClasses();
-        fetchUserProgress(userData.id);
-      } else {
-        localStorage.removeItem('token');
-      }
-    } catch (err) {
-      localStorage.removeItem('token');
-    }
-  };
-
-  const fetchClasses = async () => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/classes`);
-      if (response.ok) {
-        const classesData = await response.json();
-        setClasses(classesData);
-      }
-    } catch (err) {
-      console.error('Error fetching classes:', err);
-    }
-  };
-
-  const fetchSubjects = async (classId) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/subjects/${classId}`);
-      if (response.ok) {
-        const subjectsData = await response.json();
-        setSubjects(subjectsData);
-      }
-    } catch (err) {
-      console.error('Error fetching subjects:', err);
-    }
-  };
-
-  const fetchChapters = async (subjectId) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/chapters/${subjectId}`);
-      if (response.ok) {
-        const chaptersData = await response.json();
-        setChapters(chaptersData);
-      }
-    } catch (err) {
-      console.error('Error fetching chapters:', err);
-    }
-  };
-
-  const fetchChapterDetails = async (chapterId) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/chapter/${chapterId}`);
-      if (response.ok) {
-        const chapterData = await response.json();
-        setChapterDetails(chapterData);
-      }
-    } catch (err) {
-      console.error('Error fetching chapter details:', err);
-    }
-  };
-
-  const fetchUserProgress = async (userId) => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/api/progress/user/${userId}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      if (response.ok) {
-        const progressData = await response.json();
-        setUserProgress(progressData);
-      }
-    } catch (err) {
-      console.error('Error fetching progress:', err);
-    }
-  };
-
+  // Authentication functions
   const handleLogin = async (email, password) => {
-    setLoading(true);
-    setError('');
     try {
       const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
 
@@ -137,54 +36,42 @@ function App() {
         const data = await response.json();
         localStorage.setItem('token', data.access_token);
         setUser(data.user);
-        setCurrentView('dashboard');
         fetchClasses();
         fetchUserProgress(data.user.id);
       } else {
-        const errorData = await response.json();
-        setError(errorData.detail || 'Login failed');
+        alert('Login failed. Please check your credentials.');
       }
     } catch (err) {
-      setError('Network error. Please try again.');
-    } finally {
-      setLoading(false);
+      alert('Network error. Please try again.');
     }
   };
 
-  const handleSignup = async (username, email, password) => {
-    setLoading(true);
-    setError('');
+  const handleSignup = async (email, password, role) => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/auth/signup`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ username, email, password, role: 'student' }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, role }),
       });
 
       if (response.ok) {
         const data = await response.json();
         localStorage.setItem('token', data.access_token);
         setUser(data.user);
-        setCurrentView('dashboard');
         fetchClasses();
         fetchUserProgress(data.user.id);
       } else {
         const errorData = await response.json();
-        setError(errorData.detail || 'Signup failed');
+        alert(errorData.detail || 'Signup failed');
       }
     } catch (err) {
-      setError('Network error. Please try again.');
-    } finally {
-      setLoading(false);
+      alert('Network error. Please try again.');
     }
   };
 
   const handleLogout = () => {
     localStorage.removeItem('token');
     setUser(null);
-    setCurrentView('login');
     setClasses([]);
     setSubjects([]);
     setChapters([]);
@@ -195,6 +82,88 @@ function App() {
     setUserProgress([]);
   };
 
+  // Data fetching functions
+  const fetchClasses = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/api/classes`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setClasses(data);
+      }
+    } catch (err) {
+      console.error('Error fetching classes:', err);
+    }
+  };
+
+  const fetchSubjects = async (classId) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/api/subjects/${classId}`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setSubjects(data);
+      }
+    } catch (err) {
+      console.error('Error fetching subjects:', err);
+    }
+  };
+
+  const fetchChapters = async (subjectId) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/api/chapters/${subjectId}`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setChapters(data);
+      }
+    } catch (err) {
+      console.error('Error fetching chapters:', err);
+    }
+  };
+
+  const fetchChapterDetails = async (chapterId) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/api/chapter/${chapterId}`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setChapterDetails(data);
+      }
+    } catch (err) {
+      console.error('Error fetching chapter details:', err);
+    }
+  };
+
+  const fetchUserProgress = async (userId) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/api/progress/${userId}`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setUserProgress(data);
+      }
+    } catch (err) {
+      console.error('Error fetching user progress:', err);
+    }
+  };
+
+  // Navigation functions
   const handleClassSelect = (classData) => {
     setSelectedClass(classData);
     setSelectedSubject(null);
@@ -218,62 +187,7 @@ function App() {
     fetchChapterDetails(chapterData.id);
   };
 
-  // Fix for input focus issues with useCallback to prevent re-renders
-  const handleTitleChange = useCallback((e) => {
-    const value = e.target.value;
-    setUploadData(prev => ({...prev, title: value}));
-  }, []);
-
-  const handleContentTypeChange = useCallback((e) => {
-    const value = e.target.value;
-    setUploadData(prev => ({...prev, content_type: value}));
-  }, []);
-
-  const handleContentDataChange = useCallback((e) => {
-    const value = e.target.value;
-    setUploadData(prev => ({...prev, content_data: value}));
-  }, []);
-
-  const handleUpload = useCallback(async (e) => {
-    e.preventDefault();
-    if (!selectedChapter) {
-      alert('Please select a chapter first');
-      return;
-    }
-
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/api/content/upload`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          chapter_id: selectedChapter.id,
-          title: uploadData.title,
-          content_type: uploadData.content_type,
-          content_data: uploadData.content_data
-        }),
-      });
-
-      if (response.ok) {
-        alert('Content uploaded successfully!');
-        setUploadData({ title: '', content_type: 'text', content_data: '' });
-        setShowUploadModal(false);
-        // Refresh chapter details
-        if (selectedChapter) {
-          fetchChapterDetails(selectedChapter.id);
-        }
-      } else {
-        const errorData = await response.json();
-        alert(errorData.detail || 'Upload failed');
-      }
-    } catch (err) {
-      alert('Network error. Please try again.');
-    }
-  }, [selectedChapter, uploadData]);
-
+  // Progress tracking
   const markChapterComplete = async (chapterId) => {
     try {
       const token = localStorage.getItem('token');
@@ -301,239 +215,108 @@ function App() {
     }
   };
 
-  // Helper function to detect video type
-  const getVideoType = (videoUrl) => {
-    if (!videoUrl) return 'unknown';
-    
-    // Check if it's a YouTube URL
-    if (videoUrl.includes('youtube.com/watch?v=') || videoUrl.includes('youtu.be/')) {
-      return 'youtube';
-    }
-    
-    // Check if it's an external URL (starts with http/https)
-    if (videoUrl.startsWith('http://') || videoUrl.startsWith('https://')) {
-      return 'external';
-    }
-    
-    // Check if it's a local file path (starts with /uploads or uploads/)
-    if (videoUrl.startsWith('/uploads/') || videoUrl.startsWith('uploads/')) {
-      return 'local';
-    }
-    
-    // Check if it's a local file with common video extensions (but not external URL)
-    const videoExtensions = ['.mp4', '.avi', '.mov', '.wmv', '.webm', '.mkv', '.flv'];
-    if (videoExtensions.some(ext => videoUrl.toLowerCase().endsWith(ext))) {
-      return 'local';
-    }
-    
-    // Default to external URL
-    return 'external';
-  };
-
-  // Helper function to construct full video URL
-  const getFullVideoUrl = (videoPath) => {
-    if (videoPath.startsWith('http')) {
-      return videoPath;
-    }
-    // Use the new media endpoint for local files
-    return `${API_BASE_URL}/api/media/${videoPath}`;
-  };
-
   const getChapterProgress = (chapterId) => {
     return userProgress.find(p => p.chapter_id === chapterId);
   };
 
-  const LoginForm = () => {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-
-    const handleSubmit = (e) => {
-      e.preventDefault();
-      handleLogin(email, password);
-    };
-
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
-        <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-xl shadow-lg">
-          <div>
-            <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-              🎓 Enhanced E-Learning Platform
-            </h2>
-            <p className="mt-2 text-center text-sm text-gray-600">
-              Access your personalized learning experience
-            </p>
-          </div>
-          
-          <div className="bg-blue-50 p-4 rounded-lg">
-            <h3 className="font-semibold text-blue-900 mb-2">Demo Accounts:</h3>
-            <div className="text-sm text-blue-800">
-              <p><strong>Student:</strong> demo@example.com / Demo123!</p>
-              <p><strong>Admin:</strong> admin@example.com / Admin123!</p>
-            </div>
-          </div>
-
-          <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-            <div className="rounded-md shadow-sm -space-y-px">
-              <div>
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  required
-                  className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                  placeholder="Email address"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </div>
-              <div>
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  required
-                  className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                  placeholder="Password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-              </div>
-            </div>
-
-            {error && (
-              <div className="text-red-600 text-sm text-center">{error}</div>
-            )}
-
-            <div>
-              <button
-                type="submit"
-                disabled={loading}
-                className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
-              >
-                {loading ? 'Signing in...' : 'Sign in'}
-              </button>
-            </div>
-
-            <div className="text-center">
-              <button
-                type="button"
-                onClick={() => setCurrentView('signup')}
-                className="font-medium text-indigo-600 hover:text-indigo-500"
-              >
-                Don't have an account? Sign up
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    );
-  };
-
-  const SignupForm = () => {
-    const [username, setUsername] = useState('');
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-
-    const handleSubmit = (e) => {
-      e.preventDefault();
-      handleSignup(username, email, password);
-    };
-
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
-        <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-xl shadow-lg">
-          <div>
-            <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-              Create your account
-            </h2>
-          </div>
-          <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-            <div className="rounded-md shadow-sm -space-y-px">
-              <div>
-                <input
-                  id="username"
-                  name="username"
-                  type="text"
-                  required
-                  className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                  placeholder="Username"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                />
-              </div>
-              <div>
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  required
-                  className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                  placeholder="Email address"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </div>
-              <div>
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  required
-                  className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                  placeholder="Password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-              </div>
-            </div>
-
-            {error && (
-              <div className="text-red-600 text-sm text-center">{error}</div>
-            )}
-
-            <div>
-              <button
-                type="submit"
-                disabled={loading}
-                className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
-              >
-                {loading ? 'Creating account...' : 'Sign up'}
-              </button>
-            </div>
-
-            <div className="text-center">
-              <button
-                type="button"
-                onClick={() => setCurrentView('login')}
-                className="font-medium text-indigo-600 hover:text-indigo-500"
-              >
-                Already have an account? Sign in
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    );
-  };
-
-  // Memoized Upload Modal Component to prevent re-renders
-  const UploadModal = React.memo(() => {
-    const [localTitle, setLocalTitle] = useState(uploadData.title);
-    const [localContentType, setLocalContentType] = useState(uploadData.content_type);
-    const [localContentData, setLocalContentData] = useState(uploadData.content_data);
-    const [uploadMode, setUploadMode] = useState('text'); // 'text' or 'file'
-    const [selectedFile, setSelectedFile] = useState(null);
-    const [isUploading, setIsUploading] = useState(false);
+  // File type detection and handling
+  const getFileType = (filePath) => {
+    if (!filePath) return 'unknown';
     
-    // Sync with parent state only when modal opens
+    const path = filePath.toLowerCase();
+    
+    // Document formats
+    if (path.endsWith('.doc') || path.endsWith('.docx')) return 'document';
+    if (path.endsWith('.xls') || path.endsWith('.xlsx') || path.endsWith('.csv')) return 'spreadsheet';
+    if (path.endsWith('.ppt') || path.endsWith('.pptx')) return 'presentation';
+    if (path.endsWith('.pdf')) return 'pdf';
+    if (path.endsWith('.jpg') || path.endsWith('.jpeg') || path.endsWith('.png') || path.endsWith('.gif') || path.endsWith('.bmp') || path.endsWith('.svg')) return 'image';
+    if (path.endsWith('.mp4') || path.endsWith('.avi') || path.endsWith('.mov') || path.endsWith('.wmv') || path.endsWith('.flv') || path.endsWith('.mkv') || path.endsWith('.webm')) return 'video';
+    if (path.endsWith('.mp3') || path.endsWith('.wav') || path.endsWith('.ogg') || path.endsWith('.flac')) return 'audio';
+    if (path.endsWith('.htm') || path.endsWith('.html')) return 'webpage';
+    if (path.endsWith('.txt')) return 'text';
+    
+    // Check for URLs
+    if (path.startsWith('http://') || path.startsWith('https://')) return 'webpage';
+    
+    return 'file';
+  };
+
+  const getFileIcon = (fileType) => {
+    switch(fileType) {
+      case 'document': return '📄';
+      case 'spreadsheet': return '📊';
+      case 'presentation': return '📺';
+      case 'pdf': return '📕';
+      case 'image': return '🖼️';
+      case 'video': return '🎥';
+      case 'audio': return '🎵';
+      case 'webpage': return '🌐';
+      case 'text': return '📝';
+      default: return '📁';
+    }
+  };
+
+  const getFileColor = (fileType) => {
+    switch(fileType) {
+      case 'document': return 'from-blue-500 to-blue-600';
+      case 'spreadsheet': return 'from-green-500 to-green-600';
+      case 'presentation': return 'from-orange-500 to-orange-600';
+      case 'pdf': return 'from-red-500 to-red-600';
+      case 'image': return 'from-purple-500 to-purple-600';
+      case 'video': return 'from-pink-500 to-pink-600';
+      case 'audio': return 'from-yellow-500 to-yellow-600';
+      case 'webpage': return 'from-indigo-500 to-indigo-600';
+      case 'text': return 'from-gray-500 to-gray-600';
+      default: return 'from-slate-500 to-slate-600';
+    }
+  };
+
+  // Content opening function
+  const openContent = async (contentId) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/api/content/open/${contentId}`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        
+        if (data.type === 'url') {
+          // Open URL in new tab
+          window.open(data.path, '_blank');
+        } else if (data.type === 'file') {
+          // For local files, try to open them
+          if (data.path.startsWith('http://') || data.path.startsWith('https://')) {
+            window.open(data.path, '_blank');
+          } else {
+            // For local LAN files, construct file:// URL
+            const fileUrl = `file:///${data.path.replace(/\\/g, '/')}`;
+            window.open(fileUrl, '_blank');
+          }
+        }
+      } else {
+        alert('Failed to open content');
+      }
+    } catch (err) {
+      alert('Error opening content');
+    }
+  };
+
+  // Upload modal component
+  const UploadModal = React.memo(() => {
+    const [localData, setLocalData] = useState(contentData);
+    
     useEffect(() => {
       if (showUploadModal) {
-        setLocalTitle(uploadData.title);
-        setLocalContentType(uploadData.content_type);
-        setLocalContentData(uploadData.content_data);
-        setUploadMode('text');
-        setSelectedFile(null);
-        setIsUploading(false);
+        setLocalData(contentData);
+        // Focus the title input when modal opens
+        setTimeout(() => {
+          if (titleInputRef.current) {
+            titleInputRef.current.focus();
+          }
+        }, 100);
       }
     }, [showUploadModal]);
 
@@ -544,133 +327,61 @@ function App() {
         return;
       }
 
-      setIsUploading(true);
       try {
         const token = localStorage.getItem('token');
-        
-        if (uploadMode === 'file' && selectedFile) {
-          // Handle file upload
-          const formData = new FormData();
-          formData.append('file', selectedFile);
-          formData.append('chapter_id', selectedChapter.id);
-          formData.append('title', localTitle);
-          
-          const response = await fetch(`${API_BASE_URL}/api/content/upload-file`, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${token}`
-            },
-            body: formData
-          });
-          
-          if (response.ok) {
-            alert('File uploaded successfully!');
-          } else {
-            const errorData = await response.json();
-            alert(errorData.detail || 'File upload failed');
+        const response = await fetch(`${API_BASE_URL}/api/content/create`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            title: localData.title,
+            content_type: localData.content_type,
+            file_path: localData.file_path,
+            description: localData.description,
+            chapter_id: selectedChapter.id
+          }),
+        });
+
+        if (response.ok) {
+          alert('Content added successfully!');
+          setLocalData({ title: '', content_type: 'document', file_path: '', description: '' });
+          setContentData({ title: '', content_type: 'document', file_path: '', description: '' });
+          setShowUploadModal(false);
+          // Refresh chapter details
+          if (selectedChapter) {
+            fetchChapterDetails(selectedChapter.id);
           }
         } else {
-          // Handle text/URL upload
-          const response = await fetch(`${API_BASE_URL}/api/content/upload`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({
-              chapter_id: selectedChapter.id,
-              title: localTitle,
-              content_type: localContentType,
-              content_data: localContentData
-            }),
-          });
-
-          if (response.ok) {
-            alert('Content uploaded successfully!');
-          } else {
-            const errorData = await response.json();
-            alert(errorData.detail || 'Upload failed');
-          }
-        }
-        
-        // Reset form
-        setLocalTitle('');
-        setLocalContentType('text');
-        setLocalContentData('');
-        setSelectedFile(null);
-        setUploadMode('text');
-        setUploadData({ title: '', content_type: 'text', content_data: '' });
-        setShowUploadModal(false);
-        
-        // Refresh chapter details
-        if (selectedChapter) {
-          fetchChapterDetails(selectedChapter.id);
+          const errorData = await response.json();
+          alert(errorData.detail || 'Failed to add content');
         }
       } catch (err) {
         alert('Network error. Please try again.');
-      } finally {
-        setIsUploading(false);
       }
-    }, [localTitle, localContentType, localContentData, selectedChapter, uploadMode, selectedFile]);
-
-    const handleClose = useCallback(() => {
-      setShowUploadModal(false);
-    }, []);
-
-    if (!showUploadModal) return null;
+    }, [localData, selectedChapter]);
 
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-2xl p-8 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto shadow-2xl">
+        <div className="bg-white rounded-lg p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">📤 Upload Content</h2>
+            <h2 className="text-2xl font-bold text-gray-800">📚 Add Content</h2>
             <button
-              onClick={handleClose}
-              className="text-gray-500 hover:text-gray-700 text-2xl font-bold"
-              type="button"
+              onClick={() => setShowUploadModal(false)}
+              className="text-gray-500 hover:text-gray-700 text-2xl"
             >
               ×
             </button>
           </div>
-          
+
           <div className="mb-6 p-4 bg-blue-50 rounded-lg">
             <p className="text-sm text-blue-800">
-              📚 Uploading to: <strong>{selectedChapter?.name}</strong>
+              📚 Adding to: <strong>{selectedChapter?.name}</strong>
             </p>
             <p className="text-xs text-blue-600 mt-1">
               {chapterDetails?.class?.name} → {chapterDetails?.subject?.name} → {selectedChapter?.name}
             </p>
-          </div>
-
-          {/* Upload Mode Selection */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              📤 Upload Method
-            </label>
-            <div className="flex gap-4">
-              <button
-                type="button"
-                onClick={() => setUploadMode('text')}
-                className={`flex-1 px-4 py-2 border rounded-lg text-sm font-medium transition-all ${
-                  uploadMode === 'text' 
-                    ? 'bg-indigo-600 text-white border-indigo-600' 
-                    : 'bg-gray-50 text-gray-700 border-gray-300 hover:bg-gray-100'
-                }`}
-              >
-                📝 Text/URL Input
-              </button>
-              <button
-                type="button"
-                onClick={() => setUploadMode('file')}
-                className={`flex-1 px-4 py-2 border rounded-lg text-sm font-medium transition-all ${
-                  uploadMode === 'file' 
-                    ? 'bg-indigo-600 text-white border-indigo-600' 
-                    : 'bg-gray-50 text-gray-700 border-gray-300 hover:bg-gray-100'
-                }`}
-              >
-                📁 File Upload
-              </button>
-            </div>
           </div>
 
           <form onSubmit={handleLocalSubmit} className="space-y-6">
@@ -679,125 +390,90 @@ function App() {
                 📝 Content Title
               </label>
               <input
+                ref={titleInputRef}
                 type="text"
-                value={localTitle}
-                onChange={(e) => setLocalTitle(e.target.value)}
+                value={localData.title}
+                onChange={(e) => setLocalData({...localData, title: e.target.value})}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-lg"
-                placeholder="Enter a descriptive title for your content"
+                placeholder="Enter a descriptive title"
                 required
                 autoComplete="off"
               />
             </div>
 
-            {uploadMode === 'text' ? (
-              <>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    📂 Content Type
-                  </label>
-                  <select
-                    value={localContentType}
-                    onChange={(e) => setLocalContentType(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-lg"
-                  >
-                    <option value="text">📝 Text Content</option>
-                    <option value="video">🎥 Video URL</option>
-                    <option value="document">📄 Document Link</option>
-                    <option value="image">🖼️ Image URL</option>
-                  </select>
-                </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                📂 Content Type
+              </label>
+              <select
+                value={localData.content_type}
+                onChange={(e) => setLocalData({...localData, content_type: e.target.value})}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-lg"
+              >
+                <option value="document">📄 Document (DOC/DOCX)</option>
+                <option value="spreadsheet">📊 Spreadsheet (XLS/XLSX)</option>
+                <option value="presentation">📺 Presentation (PPT/PPTX)</option>
+                <option value="pdf">📕 PDF Document</option>
+                <option value="image">🖼️ Image</option>
+                <option value="video">🎥 Video</option>
+                <option value="audio">🎵 Audio</option>
+                <option value="webpage">🌐 Web Page/URL</option>
+                <option value="text">📝 Text File</option>
+              </select>
+            </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    📋 Content Data
-                  </label>
-                  <textarea
-                    value={localContentData}
-                    onChange={(e) => setLocalContentData(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-lg min-h-[200px] resize-y"
-                    placeholder={
-                      localContentType === 'text' ? 
-                      'Enter your text content here...' :
-                      localContentType === 'video' ?
-                      'Enter video URL (e.g., https://www.youtube.com/watch?v=VIDEO_ID or https://youtu.be/VIDEO_ID)' :
-                      localContentType === 'document' ?
-                      'Enter document URL or file path' :
-                      'Enter image URL'
-                    }
-                    required
-                    autoComplete="off"
-                  />
-                  {localContentType === 'video' && (
-                    <div className="mt-2 p-3 bg-blue-50 rounded-lg">
-                      <p className="text-sm text-blue-800">
-                        📹 <strong>Video URL Tips:</strong>
-                      </p>
-                      <ul className="text-xs text-blue-700 mt-1 space-y-1">
-                        <li>• YouTube: https://www.youtube.com/watch?v=VIDEO_ID</li>
-                        <li>• YouTube Short: https://youtu.be/VIDEO_ID</li>
-                        <li>• Vimeo: https://vimeo.com/VIDEO_ID</li>
-                        <li>• Other video URLs should be direct links</li>
-                      </ul>
-                    </div>
-                  )}
-                </div>
-              </>
-            ) : (
-              <>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    📁 Select File
-                  </label>
-                  <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg hover:border-gray-400 transition-colors">
-                    <div className="space-y-1 text-center">
-                      <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                        <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                      <div className="flex text-sm text-gray-600">
-                        <label className="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500">
-                          <span>Upload a file</span>
-                          <input
-                            type="file"
-                            onChange={(e) => setSelectedFile(e.target.files[0])}
-                            className="sr-only"
-                            accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt,.ppt,.pptx,.xls,.xlsx"
-                          />
-                        </label>
-                        <p className="pl-1">or drag and drop</p>
-                      </div>
-                      <p className="text-xs text-gray-500">
-                        Videos, Images, Documents up to 100MB
-                      </p>
-                    </div>
-                  </div>
-                  {selectedFile && (
-                    <div className="mt-2 p-3 bg-green-50 rounded-lg">
-                      <p className="text-sm text-green-800">
-                        📄 <strong>Selected:</strong> {selectedFile.name}
-                      </p>
-                      <p className="text-xs text-green-600">
-                        Size: {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </>
-            )}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                📍 File Path or URL
+              </label>
+              <input
+                type="text"
+                value={localData.file_path}
+                onChange={(e) => setLocalData({...localData, file_path: e.target.value})}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-lg"
+                placeholder="Enter file path (e.g., C:\Documents\file.pdf) or URL (e.g., https://example.com)"
+                required
+                autoComplete="off"
+              />
+              <div className="mt-2 p-3 bg-gray-50 rounded-lg">
+                <p className="text-sm text-gray-700">
+                  <strong>💡 Examples:</strong>
+                </p>
+                <ul className="text-xs text-gray-600 mt-1 space-y-1">
+                  <li>• Local file: <code>C:\Documents\lesson.pdf</code></li>
+                  <li>• Network file: <code>\\server\share\video.mp4</code></li>
+                  <li>• Web URL: <code>https://example.com/page.html</code></li>
+                  <li>• YouTube: <code>https://youtube.com/watch?v=ID</code></li>
+                </ul>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                📝 Description (Optional)
+              </label>
+              <textarea
+                value={localData.description}
+                onChange={(e) => setLocalData({...localData, description: e.target.value})}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-lg min-h-[100px] resize-y"
+                placeholder="Enter description or notes about this content"
+                autoComplete="off"
+              />
+            </div>
 
             <div className="flex gap-4">
               <button
-                type="button"
-                onClick={handleClose}
-                className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 px-6 py-3 rounded-lg text-lg font-medium transition-all duration-200"
+                type="submit"
+                className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg text-lg font-medium transition-all duration-200 shadow-lg hover:shadow-xl"
               >
-                Cancel
+                📤 Add Content
               </button>
               <button
-                type="submit"
-                disabled={isUploading || (uploadMode === 'file' && !selectedFile)}
-                className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg text-lg font-medium transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                type="button"
+                onClick={() => setShowUploadModal(false)}
+                className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 px-6 py-3 rounded-lg text-lg font-medium transition-all duration-200"
               >
-                {isUploading ? '⏳ Uploading...' : '📤 Upload Content'}
+                ❌ Cancel
               </button>
             </div>
           </form>
@@ -806,493 +482,318 @@ function App() {
     );
   });
 
-  const Dashboard = () => {
-    const completedChapters = userProgress.filter(p => p.completed).length;
-    const totalChapters = userProgress.length;
-    const progressPercentage = totalChapters > 0 ? (completedChapters / totalChapters) * 100 : 0;
+  // Login form component
+  const LoginForm = () => {
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [isSignup, setIsSignup] = useState(false);
+    const [role, setRole] = useState('student');
+
+    const handleSubmit = (e) => {
+      e.preventDefault();
+      if (isSignup) {
+        handleSignup(email, password, role);
+      } else {
+        handleLogin(email, password);
+      }
+    };
 
     return (
-      <div className="min-h-screen bg-gray-50">
-        <nav className="bg-white shadow-sm">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between h-16">
-              <div className="flex items-center">
-                <h1 className="text-xl font-semibold text-gray-900">🎓 Enhanced E-Learning Platform</h1>
-              </div>
-              <div className="flex items-center space-x-4">
-                <div className="text-sm text-gray-600">
-                  Progress: {completedChapters}/{totalChapters} chapters ({Math.round(progressPercentage)}%)
-                </div>
-                <span className="text-gray-700">Welcome, {user.username}!</span>
-                <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">
-                  {user.role}
-                </span>
-                <button
-                  onClick={handleLogout}
-                  className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+        <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full">
+          <h2 className="text-2xl font-bold text-center mb-6 text-gray-800">
+            📚 Enhanced E-Learning Platform
+          </h2>
+          
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                📧 Email
+              </label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                placeholder="Enter your email"
+                required
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                🔒 Password
+              </label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                placeholder="Enter your password"
+                required
+              />
+            </div>
+            
+            {isSignup && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  👤 Role
+                </label>
+                <select
+                  value={role}
+                  onChange={(e) => setRole(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                 >
-                  Logout
-                </button>
+                  <option value="student">🎓 Student</option>
+                  <option value="teacher">👨‍🏫 Teacher</option>
+                  <option value="admin">⚙️ Admin</option>
+                </select>
               </div>
-            </div>
-          </div>
-        </nav>
-
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Class Selection */}
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">📚 Select Class</h2>
-              <div className="space-y-2">
-                {classes.map((classData) => (
-                  <button
-                    key={classData.id}
-                    onClick={() => handleClassSelect(classData)}
-                    className={`w-full text-left p-3 rounded-md border transition-all ${
-                      selectedClass?.id === classData.id
-                        ? 'bg-indigo-100 border-indigo-500 text-indigo-900 shadow-md'
-                        : 'bg-gray-50 border-gray-200 hover:bg-gray-100 hover:border-gray-300'
-                    }`}
-                  >
-                    <div className="font-medium">{classData.name}</div>
-                    <div className="text-sm text-gray-500">{classData.description}</div>
-                    <div className="text-xs text-gray-400 mt-1">Grade Level: {classData.grade_level}</div>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Subject Selection */}
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">📖 Select Subject</h2>
-              {selectedClass ? (
-                <div className="space-y-2">
-                  {subjects.map((subject) => (
-                    <button
-                      key={subject.id}
-                      onClick={() => handleSubjectSelect(subject)}
-                      className={`w-full text-left p-3 rounded-md border transition-all ${
-                        selectedSubject?.id === subject.id
-                          ? 'bg-green-100 border-green-500 text-green-900 shadow-md'
-                          : 'bg-gray-50 border-gray-200 hover:bg-gray-100 hover:border-gray-300'
-                      }`}
-                    >
-                      <div className="font-medium">{subject.name}</div>
-                      <div className="text-sm text-gray-500">{subject.description}</div>
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center text-gray-500 py-8">
-                  <p>Please select a class first</p>
-                  <p className="text-sm">Choose from the classes on the left</p>
-                </div>
-              )}
-            </div>
-
-            {/* Chapter Selection */}
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">📝 Select Chapter</h2>
-              {selectedSubject ? (
-                <div className="space-y-2">
-                  {chapters.map((chapter) => {
-                    const progress = getChapterProgress(chapter.id);
-                    return (
-                      <button
-                        key={chapter.id}
-                        onClick={() => handleChapterSelect(chapter)}
-                        className={`w-full text-left p-3 rounded-md border transition-all ${
-                          selectedChapter?.id === chapter.id
-                            ? 'bg-blue-100 border-blue-500 text-blue-900 shadow-md'
-                            : 'bg-gray-50 border-gray-200 hover:bg-gray-100 hover:border-gray-300'
-                        }`}
-                      >
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <div className="font-medium">{chapter.name}</div>
-                            <div className="text-sm text-gray-500">{chapter.description}</div>
-                          </div>
-                          {progress && progress.completed && (
-                            <div className="text-green-600 text-xs font-medium">
-                              ✓ Completed
-                            </div>
-                          )}
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="text-center text-gray-500 py-8">
-                  <p>Please select a subject first</p>
-                  <p className="text-sm">Choose from the subjects in the middle</p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Chapter Details */}
-          {chapterDetails && (
-            <div className="mt-8 bg-white rounded-lg shadow-md p-6">
-              <div className="flex justify-between items-start mb-6">
-                <div>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                    {chapterDetails.chapter.name}
-                  </h3>
-                  <div className="text-sm text-gray-600 mb-4">
-                    {chapterDetails.class.name} → {chapterDetails.subject.name} → {chapterDetails.chapter.name}
-                  </div>
-                  <p className="text-gray-700 mb-4">{chapterDetails.chapter.description}</p>
-                </div>
-                <button
-                  onClick={() => markChapterComplete(chapterDetails.chapter.id)}
-                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium flex items-center gap-2"
-                >
-                  <span>✓</span>
-                  Mark Complete
-                </button>
-              </div>
-
-              <div className="prose max-w-none mb-6">
-                <h4 className="text-lg font-semibold text-gray-900 mb-3">Chapter Content</h4>
-                <p className="text-gray-800 leading-relaxed">
-                  {chapterDetails.chapter.content}
-                </p>
-              </div>
-
-              {/* Additional Content */}
-              {chapterDetails.content && chapterDetails.content.length > 0 && (
-                <div className="mb-6">
-                  <h4 className="text-lg font-semibold text-gray-900 mb-4">📎 Additional Content</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {chapterDetails.content.map((content) => (
-                      <div key={content.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
-                        <h5 className="font-medium text-gray-900 mb-2">{content.title}</h5>
-                        <span className={`inline-block px-2 py-1 rounded text-sm mb-2 font-medium content-type-${content.content_type}`}>
-                          {content.content_type === 'video' ? '🎥 Video' :
-                           content.content_type === 'image' ? '🖼️ Image' :
-                           content.content_type === 'document' ? '📄 Document' :
-                           '📝 Text'}
-                        </span>
-                        
-                        {/* Video Content */}
-                        {content.content_type === 'video' ? (
-                          <div className="mt-3">
-                            {(() => {
-                              const videoType = getVideoType(content.content_data);
-                              
-                              if (videoType === 'youtube') {
-                                return (
-                                  <div className="bg-gradient-to-r from-red-500 to-red-600 rounded-lg p-6 text-white">
-                                    {/* Video Icon and Title */}
-                                    <div className="flex items-center space-x-4 mb-4">
-                                      <div className="w-12 h-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center text-2xl">
-                                        ▶️
-                                      </div>
-                                      <div>
-                                        <h6 className="font-bold text-lg">{content.title}</h6>
-                                        <p className="text-red-100 text-sm">YouTube Video</p>
-                                      </div>
-                                    </div>
-                                    
-                                    {/* Large Watch Button */}
-                                    <a 
-                                      href={content.content_data} 
-                                      target="_blank" 
-                                      rel="noopener noreferrer" 
-                                      className="block w-full bg-white text-red-600 text-center py-4 px-6 rounded-lg font-bold text-lg hover:bg-red-50 transition-colors duration-200 shadow-lg"
-                                    >
-                                      🎥 WATCH ON YOUTUBE
-                                    </a>
-                                    
-                                    {/* Video URL Display */}
-                                    <div className="mt-3 text-center">
-                                      <p className="text-red-100 text-sm">
-                                        📺 Video will open in YouTube
-                                      </p>
-                                      <p className="text-red-200 text-xs mt-1 break-all">
-                                        {content.content_data}
-                                      </p>
-                                    </div>
-                                    
-                                    {/* Additional Actions */}
-                                    <div className="mt-4 flex justify-center space-x-2">
-                                      <button 
-                                        onClick={() => {
-                                          navigator.clipboard.writeText(content.content_data);
-                                          alert('Video URL copied to clipboard!');
-                                        }}
-                                        className="px-4 py-2 bg-white bg-opacity-20 text-white rounded hover:bg-opacity-30 transition-colors text-sm"
-                                      >
-                                        📋 Copy URL
-                                      </button>
-                                      <button 
-                                        onClick={() => {
-                                          const videoId = content.content_data.includes('youtube.com/watch?v=') ? 
-                                            content.content_data.split('v=')[1].split('&')[0] :
-                                            content.content_data.includes('youtu.be/') ?
-                                            content.content_data.split('youtu.be/')[1].split('?')[0] : null;
-                                          
-                                          if (videoId) {
-                                            const shareUrl = `https://www.youtube.com/watch?v=${videoId}`;
-                                            if (navigator.share) {
-                                              navigator.share({
-                                                title: content.title,
-                                                url: shareUrl
-                                              });
-                                            } else {
-                                              alert(`Share this video: ${shareUrl}`);
-                                            }
-                                          }
-                                        }}
-                                        className="px-4 py-2 bg-white bg-opacity-20 text-white rounded hover:bg-opacity-30 transition-colors text-sm"
-                                      >
-                                        📤 Share
-                                      </button>
-                                    </div>
-                                  </div>
-                                );
-                              } else if (videoType === 'local') {
-                                return (
-                                  <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg p-6 text-white">
-                                    {/* Video Icon and Title */}
-                                    <div className="flex items-center space-x-4 mb-4">
-                                      <div className="w-12 h-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center text-2xl">
-                                        🎬
-                                      </div>
-                                      <div>
-                                        <h6 className="font-bold text-lg">{content.title}</h6>
-                                        <p className="text-purple-100 text-sm">Local Video File</p>
-                                      </div>
-                                    </div>
-                                    
-                                    {/* Video Player */}
-                                    <div className="bg-black rounded-lg overflow-hidden shadow-xl">
-                                      <video 
-                                        controls 
-                                        className="w-full h-auto"
-                                        preload="metadata"
-                                        onError={(e) => {
-                                          e.target.style.display = 'none';
-                                          const fallbackDiv = e.target.parentElement.querySelector('.video-fallback');
-                                          if (fallbackDiv) {
-                                            fallbackDiv.style.display = 'block';
-                                          }
-                                        }}
-                                      >
-                                        <source src={getFullVideoUrl(content.content_data)} type="video/mp4" />
-                                        <source src={getFullVideoUrl(content.content_data)} type="video/webm" />
-                                        <source src={getFullVideoUrl(content.content_data)} type="video/ogg" />
-                                        Your browser does not support the video tag.
-                                      </video>
-                                      
-                                      {/* Fallback Error Message */}
-                                      <div className="video-fallback hidden p-8 text-center text-white">
-                                        <div className="text-6xl mb-4">❌</div>
-                                        <h3 className="text-xl font-bold mb-2">Video Could Not Load</h3>
-                                        <p className="text-gray-300 mb-4">There was an issue loading this video file.</p>
-                                        <a 
-                                          href={getFullVideoUrl(content.content_data)} 
-                                          target="_blank" 
-                                          rel="noopener noreferrer"
-                                          className="inline-block bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-medium"
-                                        >
-                                          🔗 Try Direct Link
-                                        </a>
-                                      </div>
-                                    </div>
-                                    
-                                    {/* Video Info */}
-                                    <div className="mt-4 text-center">
-                                      <p className="text-purple-100 text-sm">
-                                        🎥 Playing from server
-                                      </p>
-                                      <p className="text-purple-200 text-xs mt-1">
-                                        {content.content_data}
-                                      </p>
-                                    </div>
-                                    
-                                    {/* Additional Actions */}
-                                    <div className="mt-4 flex justify-center space-x-2">
-                                      <a 
-                                        href={getFullVideoUrl(content.content_data)} 
-                                        target="_blank" 
-                                        rel="noopener noreferrer"
-                                        className="px-4 py-2 bg-white bg-opacity-20 text-white rounded hover:bg-opacity-30 transition-colors text-sm"
-                                      >
-                                        🔗 Open in New Tab
-                                      </a>
-                                      <a 
-                                        href={getFullVideoUrl(content.content_data)} 
-                                        download
-                                        className="px-4 py-2 bg-white bg-opacity-20 text-white rounded hover:bg-opacity-30 transition-colors text-sm"
-                                      >
-                                        📥 Download
-                                      </a>
-                                    </div>
-                                  </div>
-                                );
-                              } else {
-                                return (
-                                  <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg p-6 text-white">
-                                    {/* Video Icon and Title */}
-                                    <div className="flex items-center space-x-4 mb-4">
-                                      <div className="w-12 h-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center text-2xl">
-                                        🌐
-                                      </div>
-                                      <div>
-                                        <h6 className="font-bold text-lg">{content.title}</h6>
-                                        <p className="text-blue-100 text-sm">External Video</p>
-                                      </div>
-                                    </div>
-                                    
-                                    {/* External Video Button */}
-                                    <a 
-                                      href={content.content_data} 
-                                      target="_blank" 
-                                      rel="noopener noreferrer" 
-                                      className="block w-full bg-white text-blue-600 text-center py-4 px-6 rounded-lg font-bold text-lg hover:bg-blue-50 transition-colors duration-200 shadow-lg"
-                                    >
-                                      🎥 WATCH VIDEO
-                                    </a>
-                                    
-                                    {/* Video URL Display */}
-                                    <div className="mt-3 text-center">
-                                      <p className="text-blue-100 text-sm">
-                                        🔗 External video link
-                                      </p>
-                                      <p className="text-blue-200 text-xs mt-1 break-all">
-                                        {content.content_data}
-                                      </p>
-                                    </div>
-                                  </div>
-                                );
-                              }
-                            })()}
-                          </div>
-                        ) : 
-                        
-                        /* Image Content */
-                        content.content_type === 'image' ? (
-                          <div className="mt-3">
-                            <img
-                              src={content.content_data}
-                              alt={content.title}
-                              className="w-full h-48 object-cover rounded-lg"
-                              onError={(e) => {
-                                e.target.style.display = 'none';
-                                const fallbackDiv = e.target.parentElement.querySelector('.image-fallback');
-                                if (fallbackDiv) {
-                                  fallbackDiv.style.display = 'block';
-                                }
-                              }}
-                            />
-                            <div className="image-fallback hidden p-4 bg-gray-100 rounded-lg text-center">
-                              <p className="text-gray-600">🖼️ Image: {content.content_data}</p>
-                            </div>
-                          </div>
-                        ) : 
-                        
-                        /* Document Content */
-                        content.content_type === 'document' ? (
-                          <div className="mt-3">
-                            <a
-                              href={content.content_data}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-800 rounded-lg hover:bg-blue-200 transition-colors"
-                            >
-                              📄 View Document
-                            </a>
-                            <p className="text-xs text-gray-500 mt-2">{content.content_data}</p>
-                          </div>
-                        ) : 
-                        
-                        /* Text Content */
-                        (
-                          <div className="mt-3">
-                            <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-wrap">
-                              {content.content_data}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Assignments */}
-              {chapterDetails.assignments && chapterDetails.assignments.length > 0 && (
-                <div className="mb-6">
-                  <h4 className="text-lg font-semibold text-gray-900 mb-4">📋 Assignments</h4>
-                  <div className="space-y-4">
-                    {chapterDetails.assignments.map((assignment) => (
-                      <div key={assignment.id} className="border-l-4 border-orange-400 pl-4 py-3 bg-orange-50 rounded-r-lg">
-                        <h5 className="font-medium text-orange-900 mb-1">{assignment.title}</h5>
-                        <p className="text-orange-800 text-sm mb-2">{assignment.description}</p>
-                        <div className="flex justify-between items-center text-sm text-orange-700">
-                          <span>Points: {assignment.points}</span>
-                          {assignment.due_date && (
-                            <span>Due: {new Date(assignment.due_date).toLocaleDateString()}</span>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Quizzes */}
-              {chapterDetails.quizzes && chapterDetails.quizzes.length > 0 && (
-                <div className="mb-6">
-                  <h4 className="text-lg font-semibold text-gray-900 mb-4">🎯 Quizzes</h4>
-                  <div className="space-y-4">
-                    {chapterDetails.quizzes.map((quiz) => (
-                      <div key={quiz.id} className="border-l-4 border-purple-400 pl-4 py-3 bg-purple-50 rounded-r-lg">
-                        <h5 className="font-medium text-purple-900 mb-1">{quiz.title}</h5>
-                        <p className="text-purple-800 text-sm mb-2">{quiz.description}</p>
-                        <div className="flex justify-between items-center text-sm text-purple-700">
-                          <span>Questions: {quiz.questions.length}</span>
-                          <span>Time Limit: {quiz.time_limit} minutes</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Upload Button */}
-          {selectedChapter && (
-            <div className="mt-8 bg-white rounded-lg shadow-md p-6 text-center">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">📤 Want to Add More Content?</h3>
-              <p className="text-gray-600 mb-6">
-                Upload additional educational materials to enrich this chapter for all students.
-              </p>
-              <button
-                onClick={() => setShowUploadModal(true)}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-4 rounded-lg text-lg font-medium transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
-              >
-                📤 Upload Content
-              </button>
-            </div>
-          )}
-
-          {/* Upload Modal */}
-          <UploadModal />
+            )}
+            
+            <button
+              type="submit"
+              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-lg font-medium transition-colors duration-200"
+            >
+              {isSignup ? '🚀 Sign Up' : '🔑 Login'}
+            </button>
+          </form>
+          
+          <p className="mt-4 text-center text-sm text-gray-600">
+            {isSignup ? 'Already have an account?' : "Don't have an account?"}
+            <button
+              onClick={() => setIsSignup(!isSignup)}
+              className="ml-1 text-indigo-600 hover:text-indigo-800 font-medium"
+            >
+              {isSignup ? 'Login' : 'Sign Up'}
+            </button>
+          </p>
         </div>
       </div>
     );
   };
 
-  // Main render logic
+  // Check for existing token on component mount
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      // Verify token by trying to fetch classes
+      fetchClasses();
+    }
+  }, []);
+
   if (!user) {
-    return currentView === 'login' ? <LoginForm /> : <SignupForm />;
+    return <LoginForm />;
   }
 
-  return <Dashboard />;
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      {/* Header */}
+      <header className="bg-white shadow-lg">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center py-6">
+            <div className="flex items-center space-x-4">
+              <h1 className="text-3xl font-bold text-gray-900">
+                📚 Enhanced E-Learning Platform
+              </h1>
+            </div>
+            <div className="flex items-center space-x-4">
+              <div className="text-sm text-gray-600">
+                Progress: {userProgress.filter(p => p.completed).length} chapters ({Math.round((userProgress.filter(p => p.completed).length / Math.max(userProgress.length, 1)) * 100)}%)
+              </div>
+              <div className="text-sm">
+                Welcome, <span className="font-semibold">{user.email}</span>!
+              </div>
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                {user.role}
+              </span>
+              <button
+                onClick={handleLogout}
+                className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200"
+              >
+                Logout
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Classes Section */}
+          <div className="bg-white rounded-lg shadow-lg p-6">
+            <h2 className="text-xl font-semibold mb-4 text-gray-800">🎓 Select Class</h2>
+            <div className="space-y-3">
+              {classes.map((cls) => (
+                <button
+                  key={cls.id}
+                  onClick={() => handleClassSelect(cls)}
+                  className={`w-full text-left p-4 rounded-lg border transition-all duration-200 ${
+                    selectedClass?.id === cls.id
+                      ? 'bg-indigo-50 border-indigo-200 text-indigo-800'
+                      : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                  }`}
+                >
+                  <div className="font-medium">{cls.name}</div>
+                  <div className="text-sm text-gray-600">{cls.grade}</div>
+                  <div className="text-xs text-gray-500 mt-1">Grade Level {cls.grade}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Subjects Section */}
+          <div className="bg-white rounded-lg shadow-lg p-6">
+            <h2 className="text-xl font-semibold mb-4 text-gray-800">📖 Select Subject</h2>
+            {selectedClass ? (
+              <div className="space-y-3">
+                {subjects.map((subject) => (
+                  <button
+                    key={subject.id}
+                    onClick={() => handleSubjectSelect(subject)}
+                    className={`w-full text-left p-4 rounded-lg border transition-all duration-200 ${
+                      selectedSubject?.id === subject.id
+                        ? 'bg-green-50 border-green-200 text-green-800'
+                        : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                    }`}
+                  >
+                    <div className="font-medium">{subject.name}</div>
+                    <div className="text-sm text-gray-600">{subject.description}</div>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <p className="text-gray-500 text-center py-8">
+                👆 Please select a class first
+              </p>
+            )}
+          </div>
+
+          {/* Chapters Section */}
+          <div className="bg-white rounded-lg shadow-lg p-6">
+            <h2 className="text-xl font-semibold mb-4 text-gray-800">📝 Select Chapter</h2>
+            {selectedSubject ? (
+              <div className="space-y-3">
+                {chapters.map((chapter) => {
+                  const progress = getChapterProgress(chapter.id);
+                  return (
+                    <button
+                      key={chapter.id}
+                      onClick={() => handleChapterSelect(chapter)}
+                      className={`w-full text-left p-4 rounded-lg border transition-all duration-200 ${
+                        selectedChapter?.id === chapter.id
+                          ? 'bg-yellow-50 border-yellow-200 text-yellow-800'
+                          : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                      }`}
+                    >
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <div className="font-medium">{chapter.name}</div>
+                          <div className="text-sm text-gray-600">{chapter.description}</div>
+                        </div>
+                        {progress?.completed && (
+                          <span className="text-green-500 text-lg">✅</span>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-gray-500 text-center py-8">
+                👆 Please select a subject first
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Chapter Details Section */}
+        {selectedChapter && chapterDetails && (
+          <div className="mt-8 bg-white rounded-lg shadow-lg p-6">
+            <div className="flex justify-between items-start mb-6">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-800">{selectedChapter.name}</h2>
+                <p className="text-gray-600 mt-2">
+                  {chapterDetails.class?.name} → {chapterDetails.subject?.name} → {selectedChapter.name}
+                </p>
+              </div>
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => markChapterComplete(selectedChapter.id)}
+                  className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200"
+                >
+                  ✅ Mark Complete
+                </button>
+                <button
+                  onClick={() => setShowUploadModal(true)}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200"
+                >
+                  📤 Add Content
+                </button>
+              </div>
+            </div>
+
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold text-gray-800 mb-2">Chapter Content</h3>
+              <p className="text-gray-600">{selectedChapter.description}</p>
+            </div>
+
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-gray-800">📚 Additional Content</h3>
+              
+              {chapterDetails.content && chapterDetails.content.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {chapterDetails.content.map((content) => {
+                    const fileType = getFileType(content.file_path);
+                    const fileIcon = getFileIcon(fileType);
+                    const fileColor = getFileColor(fileType);
+                    
+                    return (
+                      <div key={content.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                        <div className={`bg-gradient-to-r ${fileColor} rounded-lg p-4 text-white mb-3`}>
+                          <div className="flex items-center space-x-3">
+                            <div className="text-2xl">{fileIcon}</div>
+                            <div>
+                              <h4 className="font-bold text-lg">{content.title}</h4>
+                              <p className="text-sm opacity-90">{fileType.toUpperCase()}</p>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {content.description && (
+                          <p className="text-gray-600 text-sm mb-3">{content.description}</p>
+                        )}
+                        
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs text-gray-500 font-mono bg-gray-100 px-2 py-1 rounded">
+                            {content.file_path}
+                          </span>
+                          <button
+                            onClick={() => openContent(content.id)}
+                            className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm font-medium transition-colors duration-200"
+                          >
+                            🔗 Open
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="text-gray-500 text-center py-8">
+                  📂 No additional content available yet
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+      </main>
+
+      {/* Upload Modal */}
+      {showUploadModal && <UploadModal />}
+    </div>
+  );
 }
 
 export default App;
