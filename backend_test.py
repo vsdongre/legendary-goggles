@@ -273,31 +273,226 @@ class ELearningAPITester:
             return True, response
         return success, response
 
-    def test_content_upload(self, chapter_id):
-        """Test content upload functionality"""
+    def test_file_upload_without_auth(self):
+        """Test file upload without authentication (should fail)"""
+        # Create a small test video file
+        test_video_content = b"fake_video_content_for_testing"
+        
+        # Temporarily remove token for this test
+        original_token = self.token
+        self.token = None
+        
+        try:
+            url = f"{self.base_url}/api/content/upload-file"
+            files = {'file': ('test_video.mp4', test_video_content, 'video/mp4')}
+            data = {
+                'chapter_id': 'test_chapter_id',
+                'title': 'Test Video Upload'
+            }
+            
+            self.tests_run += 1
+            print(f"\n🔍 Testing File Upload Without Authentication...")
+            print(f"   URL: {url}")
+            
+            response = requests.post(url, files=files, data=data, timeout=10)
+            
+            success = response.status_code == 401  # Should fail with 401 Unauthorized
+            if success:
+                self.tests_passed += 1
+                print(f"✅ Passed - Correctly rejected unauthorized upload (Status: {response.status_code})")
+            else:
+                print(f"❌ Failed - Expected 401, got {response.status_code}")
+                print(f"   Response: {response.text}")
+            
+            return success
+            
+        except Exception as e:
+            print(f"❌ Failed - Error: {str(e)}")
+            return False
+        finally:
+            # Restore token
+            self.token = original_token
+
+    def test_file_upload_with_auth(self, chapter_id):
+        """Test file upload with proper authentication"""
         if not self.token:
-            print("❌ No token available for content upload test")
+            print("❌ No token available for authenticated file upload test")
+            return False, None
+            
+        # Create a small test video file
+        test_video_content = b"fake_video_content_for_testing_authenticated_upload"
+        
+        try:
+            url = f"{self.base_url}/api/content/upload-file"
+            files = {'file': ('test_video_auth.mp4', test_video_content, 'video/mp4')}
+            data = {
+                'chapter_id': chapter_id,
+                'title': 'Test Video Upload with Auth'
+            }
+            headers = {'Authorization': f'Bearer {self.token}'}
+            
+            self.tests_run += 1
+            print(f"\n🔍 Testing File Upload With Authentication...")
+            print(f"   URL: {url}")
+            print(f"   Chapter ID: {chapter_id}")
+            
+            response = requests.post(url, files=files, data=data, headers=headers, timeout=10)
+            
+            success = response.status_code == 200
+            if success:
+                self.tests_passed += 1
+                print(f"✅ Passed - File uploaded successfully (Status: {response.status_code})")
+                try:
+                    response_data = response.json()
+                    content_id = response_data.get('content_id')
+                    print(f"   Content ID: {content_id}")
+                    return True, content_id
+                except:
+                    print(f"   Response: {response.text}")
+                    return True, None
+            else:
+                print(f"❌ Failed - Expected 200, got {response.status_code}")
+                print(f"   Response: {response.text}")
+                return False, None
+            
+        except Exception as e:
+            print(f"❌ Failed - Error: {str(e)}")
+            return False, None
+
+    def test_static_file_serving(self, file_path):
+        """Test that uploaded files can be accessed via static file serving"""
+        if not file_path:
+            print("❌ No file path provided for static file serving test")
             return False
             
-        upload_data = {
-            "chapter_id": chapter_id,
-            "title": "Test Content Upload",
-            "content_type": "text",
-            "content_data": "This is a test content upload to verify the API functionality."
-        }
+        try:
+            # Extract filename from path (should be in format uploads/filename.ext)
+            if file_path.startswith('uploads/'):
+                static_url = f"{self.base_url}/{file_path}"
+            else:
+                static_url = f"{self.base_url}/uploads/{file_path}"
+            
+            self.tests_run += 1
+            print(f"\n🔍 Testing Static File Serving...")
+            print(f"   URL: {static_url}")
+            
+            response = requests.get(static_url, timeout=10)
+            
+            success = response.status_code == 200
+            if success:
+                self.tests_passed += 1
+                print(f"✅ Passed - File served successfully (Status: {response.status_code})")
+                print(f"   Content-Type: {response.headers.get('content-type', 'Not specified')}")
+                print(f"   Content-Length: {len(response.content)} bytes")
+                
+                # Check if it's a video file and has appropriate content-type
+                if file_path.endswith('.mp4'):
+                    content_type = response.headers.get('content-type', '')
+                    if 'video' in content_type or 'mp4' in content_type:
+                        print(f"   ✅ Correct video content-type detected")
+                    else:
+                        print(f"   ⚠️  Content-type may not be optimal for video: {content_type}")
+                
+                return True
+            else:
+                print(f"❌ Failed - Expected 200, got {response.status_code}")
+                print(f"   Response: {response.text}")
+                return False
+            
+        except Exception as e:
+            print(f"❌ Failed - Error: {str(e)}")
+            return False
+
+    def test_content_retrieval_after_upload(self, chapter_id):
+        """Test that uploaded content appears in chapter content retrieval"""
+        try:
+            url = f"{self.base_url}/api/content/{chapter_id}"
+            headers = {'Authorization': f'Bearer {self.token}'} if self.token else {}
+            
+            self.tests_run += 1
+            print(f"\n🔍 Testing Content Retrieval After Upload...")
+            print(f"   URL: {url}")
+            
+            response = requests.get(url, headers=headers, timeout=10)
+            
+            success = response.status_code == 200
+            if success:
+                self.tests_passed += 1
+                print(f"✅ Passed - Content retrieved successfully (Status: {response.status_code})")
+                try:
+                    content_list = response.json()
+                    print(f"   Found {len(content_list)} content items")
+                    
+                    # Look for video content
+                    video_content = [item for item in content_list if item.get('content_type') == 'video']
+                    if video_content:
+                        print(f"   ✅ Found {len(video_content)} video content items")
+                        for video in video_content:
+                            print(f"     - Title: {video.get('title', 'No title')}")
+                            print(f"     - File: {video.get('content_data', 'No file path')}")
+                            print(f"     - Original filename: {video.get('filename', 'No filename')}")
+                    else:
+                        print(f"   ⚠️  No video content found in chapter")
+                    
+                    return True, content_list
+                except:
+                    print(f"   Response: {response.text}")
+                    return True, []
+            else:
+                print(f"❌ Failed - Expected 200, got {response.status_code}")
+                print(f"   Response: {response.text}")
+                return False, []
+            
+        except Exception as e:
+            print(f"❌ Failed - Error: {str(e)}")
+            return False, []
+
+    def test_video_upload_scenarios(self):
+        """Test comprehensive video upload scenarios"""
+        print(f"\n🎥 Testing Video Upload and Serving Scenarios")
+        print("=" * 50)
         
-        success, response = self.run_test(
-            "Content Upload",
-            "POST",
-            "api/content/upload",
-            200,
-            data=upload_data
-        )
+        # Get a chapter ID for testing
+        if not self.chapter_ids:
+            print("❌ No chapter IDs available for video upload testing")
+            return False
         
-        if success and 'content_id' in response:
-            print(f"   Content ID: {response['content_id']}")
-            return True
-        return False
+        test_chapter_id = self.chapter_ids[0]
+        print(f"Using chapter ID: {test_chapter_id}")
+        
+        # Test 1: Upload without authentication (should fail)
+        auth_test_passed = self.test_file_upload_without_auth()
+        
+        # Test 2: Upload with authentication (should succeed)
+        upload_success, content_id = self.test_file_upload_with_auth(test_chapter_id)
+        
+        if not upload_success:
+            print("❌ Cannot continue video tests - file upload failed")
+            return False
+        
+        # Test 3: Retrieve content to get file path
+        content_success, content_list = self.test_content_retrieval_after_upload(test_chapter_id)
+        
+        # Find the uploaded video file path
+        uploaded_file_path = None
+        if content_success and content_list:
+            for item in content_list:
+                if item.get('content_type') == 'video' and 'test_video_auth.mp4' in item.get('filename', ''):
+                    uploaded_file_path = item.get('content_data')
+                    break
+        
+        # Test 4: Static file serving
+        if uploaded_file_path:
+            static_serving_success = self.test_static_file_serving(uploaded_file_path)
+        else:
+            print("❌ Could not find uploaded file path for static serving test")
+            static_serving_success = False
+        
+        # Summary of video upload tests
+        video_tests_passed = sum([auth_test_passed, upload_success, content_success, static_serving_success])
+        print(f"\n📊 Video Upload Test Results: {video_tests_passed}/4 tests passed")
+        
+        return video_tests_passed == 4
 
 def main():
     print("🚀 Starting E-Learning Platform API Tests")
