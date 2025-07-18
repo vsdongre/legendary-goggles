@@ -581,13 +581,12 @@ def main():
             print(f"❌ Failed to get details for chapter: {chapter_name}")
             return 1
     
-    # Test 8: Content upload
-    if all_chapters:
-        first_chapter_id = all_chapters[0]['id']
-        print(f"\n📤 Testing content upload")
-        if not tester.test_content_upload(first_chapter_id):
-            print("❌ Content upload failed")
-            return 1
+    # Test 8: Video Upload and Serving Tests
+    print(f"\n🎥 Running comprehensive video upload tests")
+    video_tests_success = tester.test_video_upload_scenarios()
+    if not video_tests_success:
+        print("❌ Video upload tests failed")
+        return 1
     
     # Test 9: Test login with new user (if we created one)
     if tester.test_user_email != "demo@example.com":
