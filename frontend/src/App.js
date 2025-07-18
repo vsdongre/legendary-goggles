@@ -802,8 +802,11 @@ function App() {
                     {chapterDetails.content.map((content) => (
                       <div key={content.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
                         <h5 className="font-medium text-gray-900 mb-2">{content.title}</h5>
-                        <span className="inline-block bg-gray-100 text-gray-800 px-2 py-1 rounded text-sm mb-2">
-                          {content.content_type}
+                        <span className={`inline-block px-2 py-1 rounded text-sm mb-2 font-medium content-type-${content.content_type}`}>
+                          {content.content_type === 'video' ? '🎥 Video' :
+                           content.content_type === 'image' ? '🖼️ Image' :
+                           content.content_type === 'document' ? '📄 Document' :
+                           '📝 Text'}
                         </span>
                         
                         {/* Video Content */}
