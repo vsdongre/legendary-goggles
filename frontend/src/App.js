@@ -456,7 +456,103 @@ function App() {
     );
   };
 
-  const Dashboard = () => {
+  const UploadModal = () => {
+    if (!showUploadModal) return null;
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-2xl p-8 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto shadow-2xl">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold text-gray-900">📤 Upload Content</h2>
+            <button
+              onClick={() => setShowUploadModal(false)}
+              className="text-gray-500 hover:text-gray-700 text-2xl font-bold"
+            >
+              ×
+            </button>
+          </div>
+          
+          <div className="mb-6 p-4 bg-blue-50 rounded-lg">
+            <p className="text-sm text-blue-800">
+              📚 Uploading to: <strong>{selectedChapter?.name}</strong>
+            </p>
+            <p className="text-xs text-blue-600 mt-1">
+              {chapterDetails?.class?.name} → {chapterDetails?.subject?.name} → {selectedChapter?.name}
+            </p>
+          </div>
+
+          <form onSubmit={handleUpload} className="space-y-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                📝 Content Title
+              </label>
+              <input
+                type="text"
+                value={uploadData.title}
+                onChange={(e) => setUploadData({...uploadData, title: e.target.value})}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-lg"
+                placeholder="Enter a descriptive title for your content"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                📂 Content Type
+              </label>
+              <select
+                value={uploadData.content_type}
+                onChange={(e) => setUploadData({...uploadData, content_type: e.target.value})}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-lg"
+              >
+                <option value="text">📝 Text Content</option>
+                <option value="video">🎥 Video URL</option>
+                <option value="document">📄 Document Link</option>
+                <option value="image">🖼️ Image URL</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                📋 Content Data
+              </label>
+              <textarea
+                value={uploadData.content_data}
+                onChange={(e) => setUploadData({...uploadData, content_data: e.target.value})}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-lg min-h-[200px]"
+                placeholder={
+                  uploadData.content_type === 'text' ? 
+                  'Enter your text content here...' :
+                  uploadData.content_type === 'video' ?
+                  'Enter video URL (e.g., https://youtube.com/watch?v=...)' :
+                  uploadData.content_type === 'document' ?
+                  'Enter document URL or file path' :
+                  'Enter image URL'
+                }
+                required
+              />
+            </div>
+
+            <div className="flex gap-4">
+              <button
+                type="button"
+                onClick={() => setShowUploadModal(false)}
+                className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 px-6 py-3 rounded-lg text-lg font-medium transition-all duration-200"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg text-lg font-medium transition-all duration-200 shadow-lg hover:shadow-xl"
+              >
+                📤 Upload Content
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    );
+  };
     const completedChapters = userProgress.filter(p => p.completed).length;
     const totalChapters = userProgress.length;
     const progressPercentage = totalChapters > 0 ? (completedChapters / totalChapters) * 100 : 0;
