@@ -189,12 +189,13 @@ metadata:
 
 test_plan:
   current_focus:
+    - "Frontend Navigation Fix"
+  stuck_tasks:
     - "File Upload Interface"
-    - "Local Video Playback"
+    - "Local Video Playback" 
     - "Video Type Detection"
-  stuck_tasks: []
   test_all: false
-  test_priority: "high_first"
+  test_priority: "stuck_first"
 
 agent_communication:
   - agent: "main"
