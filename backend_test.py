@@ -337,7 +337,7 @@ def main():
         print("❌ Admin login failed")
         return 1
     
-    # Test 5: Get user info (verify JWT token works)
+    # Test 6: Get user info (verify JWT token works)
     if not tester.test_get_user_info():
         print("❌ User info retrieval failed")
         return 1
