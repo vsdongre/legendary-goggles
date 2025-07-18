@@ -41,10 +41,7 @@ os.makedirs("uploads/videos", exist_ok=True)
 os.makedirs("uploads/images", exist_ok=True)
 os.makedirs("uploads/documents", exist_ok=True)
 
-# Mount static files for uploaded content
-app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
-
-# Add custom endpoint to serve video files with proper content-type
+# Custom endpoint to serve video files with proper content-type
 @app.get("/uploads/{file_path:path}")
 async def serve_uploaded_file(file_path: str):
     from fastapi.responses import FileResponse
