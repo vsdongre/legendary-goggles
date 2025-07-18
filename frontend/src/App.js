@@ -483,6 +483,7 @@ function App() {
             <button
               onClick={() => setShowUploadModal(false)}
               className="text-gray-500 hover:text-gray-700 text-2xl font-bold"
+              type="button"
             >
               ×
             </button>
@@ -503,12 +504,14 @@ function App() {
                 📝 Content Title
               </label>
               <input
+                ref={titleInputRef}
                 type="text"
                 value={uploadData.title}
-                onChange={(e) => setUploadData({...uploadData, title: e.target.value})}
+                onChange={handleTitleChange}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-lg"
                 placeholder="Enter a descriptive title for your content"
                 required
+                autoComplete="off"
               />
             </div>
 
@@ -518,7 +521,7 @@ function App() {
               </label>
               <select
                 value={uploadData.content_type}
-                onChange={(e) => setUploadData({...uploadData, content_type: e.target.value})}
+                onChange={handleContentTypeChange}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-lg"
               >
                 <option value="text">📝 Text Content</option>
@@ -533,9 +536,10 @@ function App() {
                 📋 Content Data
               </label>
               <textarea
+                ref={contentInputRef}
                 value={uploadData.content_data}
-                onChange={(e) => setUploadData({...uploadData, content_data: e.target.value})}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-lg min-h-[200px]"
+                onChange={handleContentDataChange}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-lg min-h-[200px] resize-y"
                 placeholder={
                   uploadData.content_type === 'text' ? 
                   'Enter your text content here...' :
@@ -546,6 +550,7 @@ function App() {
                   'Enter image URL'
                 }
                 required
+                autoComplete="off"
               />
             </div>
 
