@@ -1068,7 +1068,10 @@ function App() {
                                         preload="metadata"
                                         onError={(e) => {
                                           e.target.style.display = 'none';
-                                          e.target.nextSibling.style.display = 'block';
+                                          const fallbackDiv = e.target.parentElement.querySelector('.video-fallback');
+                                          if (fallbackDiv) {
+                                            fallbackDiv.style.display = 'block';
+                                          }
                                         }}
                                       >
                                         <source src={getFullVideoUrl(content.content_data)} type="video/mp4" />
@@ -1078,7 +1081,7 @@ function App() {
                                       </video>
                                       
                                       {/* Fallback Error Message */}
-                                      <div className="hidden p-8 text-center text-white">
+                                      <div className="video-fallback hidden p-8 text-center text-white">
                                         <div className="text-6xl mb-4">❌</div>
                                         <h3 className="text-xl font-bold mb-2">Video Could Not Load</h3>
                                         <p className="text-gray-300 mb-4">There was an issue loading this video file.</p>
