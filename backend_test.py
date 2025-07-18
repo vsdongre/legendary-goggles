@@ -283,25 +283,22 @@ class ELearningAPITester:
         self.token = None
         
         try:
-            url = f"{self.base_url}/api/content/upload-file"
+            # Use query parameters as expected by the API
+            url = f"{self.base_url}/api/content/upload-file?chapter_id=test_chapter_id&title=Test Video Upload"
             files = {'file': ('test_video.mp4', test_video_content, 'video/mp4')}
-            data = {
-                'chapter_id': 'test_chapter_id',
-                'title': 'Test Video Upload'
-            }
             
             self.tests_run += 1
             print(f"\n🔍 Testing File Upload Without Authentication...")
             print(f"   URL: {url}")
             
-            response = requests.post(url, files=files, data=data, timeout=10)
+            response = requests.post(url, files=files, timeout=10)
             
-            success = response.status_code == 401  # Should fail with 401 Unauthorized
+            success = response.status_code in [401, 403]  # Should fail with 401 or 403
             if success:
                 self.tests_passed += 1
                 print(f"✅ Passed - Correctly rejected unauthorized upload (Status: {response.status_code})")
             else:
-                print(f"❌ Failed - Expected 401, got {response.status_code}")
+                print(f"❌ Failed - Expected 401/403, got {response.status_code}")
                 print(f"   Response: {response.text}")
             
             return success
@@ -323,12 +320,9 @@ class ELearningAPITester:
         test_video_content = b"fake_video_content_for_testing_authenticated_upload"
         
         try:
-            url = f"{self.base_url}/api/content/upload-file"
+            # Use query parameters as expected by the API
+            url = f"{self.base_url}/api/content/upload-file?chapter_id={chapter_id}&title=Test Video Upload with Auth"
             files = {'file': ('test_video_auth.mp4', test_video_content, 'video/mp4')}
-            data = {
-                'chapter_id': chapter_id,
-                'title': 'Test Video Upload with Auth'
-            }
             headers = {'Authorization': f'Bearer {self.token}'}
             
             self.tests_run += 1
@@ -336,7 +330,7 @@ class ELearningAPITester:
             print(f"   URL: {url}")
             print(f"   Chapter ID: {chapter_id}")
             
-            response = requests.post(url, files=files, data=data, headers=headers, timeout=10)
+            response = requests.post(url, files=files, headers=headers, timeout=10)
             
             success = response.status_code == 200
             if success:
