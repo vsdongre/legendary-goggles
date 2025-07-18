@@ -103,6 +103,51 @@ class ELearningAPITester:
             return True
         return False
 
+    def test_admin_login(self):
+        """Test admin user login"""
+        login_data = {
+            "email": "admin@example.com",
+            "password": "Admin123!"
+        }
+        
+        success, response = self.run_test(
+            "Admin User Login",
+            "POST",
+            "api/auth/login",
+            200,
+            data=login_data
+        )
+        
+        if success and 'access_token' in response:
+            self.admin_token = response['access_token']
+            self.admin_user_id = response['user']['id']
+            print(f"   Admin User ID: {self.admin_user_id}")
+            print(f"   Admin Role: {response['user']['role']}")
+            return True
+        return False
+
+    def test_create_demo_student(self):
+        """Create demo student if it doesn't exist"""
+        signup_data = {
+            "username": "demo_user",
+            "email": "demo@example.com",
+            "password": "Demo123!",
+            "role": "student"
+        }
+        
+        success, response = self.run_test(
+            "Create Demo Student",
+            "POST",
+            "api/auth/signup",
+            200,
+            data=signup_data
+        )
+        
+        if success and 'access_token' in response:
+            print(f"   Demo student created successfully")
+            return True
+        return False
+
     def test_signup(self):
         """Test user signup"""
         signup_data = {
