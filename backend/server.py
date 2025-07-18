@@ -122,15 +122,34 @@ def get_file_type(file_path: str) -> str:
         return 'file'
 
 def is_valid_path(file_path: str) -> bool:
-    """Check if file path is valid (exists on LAN or is URL)"""
-    if file_path.startswith(('http://', 'https://')):
-        return True  # URL - assume valid
-    
-    # Check if file exists on local network
-    try:
-        return os.path.exists(file_path) or Path(file_path).is_file()
-    except:
+    """Check if file path is valid (basic validation for LAN paths and URLs)"""
+    if not file_path or len(file_path.strip()) == 0:
         return False
+    
+    # URL validation - assume valid if starts with http/https
+    if file_path.startswith(('http://', 'https://')):
+        return True
+    
+    # Basic path validation for LAN environments
+    # We don't check if file exists since it's on client's LAN, not server
+    
+    # Windows paths
+    if file_path.startswith(('C:\\', 'D:\\', 'E:\\', 'F:\\', 'G:\\', 'H:\\')) or file_path.startswith('\\\\'):
+        return True
+    
+    # Unix/Linux paths
+    if file_path.startswith('/'):
+        return True
+    
+    # Relative paths
+    if '/' in file_path or '\\' in file_path:
+        return True
+    
+    # Simple filename
+    if '.' in file_path:
+        return True
+    
+    return True  # For LAN environment, we allow most paths
 
 # Root endpoint
 @app.get("/")
