@@ -828,22 +828,35 @@ function App() {
                             <div className="aspect-w-16 aspect-h-9 bg-gray-100 rounded-lg overflow-hidden">
                               <iframe
                                 src={(() => {
-                                  let url = content.content_data;
-                                  // Convert YouTube watch URLs to embed URLs
+                                  let url = content.content_data.trim();
+                                  console.log('Original URL:', url);
+                                  
+                                  // Handle YouTube watch URLs
                                   if (url.includes('youtube.com/watch?v=')) {
-                                    const videoId = url.split('watch?v=')[1].split('&')[0];
-                                    return `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1&playsinline=1`;
+                                    const videoId = url.match(/[?&]v=([^&]+)/)?.[1];
+                                    if (videoId) {
+                                      const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=0&mute=0&controls=1&rel=0&modestbranding=1&playsinline=1&enablejsapi=1`;
+                                      console.log('Converted to embed:', embedUrl);
+                                      return embedUrl;
+                                    }
                                   }
-                                  // Convert youtu.be URLs to embed URLs
+                                  
+                                  // Handle youtu.be URLs
                                   if (url.includes('youtu.be/')) {
-                                    const videoId = url.split('youtu.be/')[1].split('?')[0];
-                                    return `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1&playsinline=1`;
+                                    const videoId = url.split('youtu.be/')[1]?.split('?')[0];
+                                    if (videoId) {
+                                      const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=0&mute=0&controls=1&rel=0&modestbranding=1&playsinline=1&enablejsapi=1`;
+                                      console.log('Converted youtu.be to embed:', embedUrl);
+                                      return embedUrl;
+                                    }
                                   }
-                                  // If already an embed URL, add parameters
+                                  
+                                  // Handle already embed URLs
                                   if (url.includes('youtube.com/embed/')) {
-                                    return `${url}?rel=0&modestbranding=1&playsinline=1`;
+                                    return url.includes('?') ? url : `${url}?autoplay=0&mute=0&controls=1&rel=0&modestbranding=1&playsinline=1&enablejsapi=1`;
                                   }
-                                  // For other video URLs, use as-is
+                                  
+                                  // For other video URLs (Vimeo, etc.)
                                   return url;
                                 })()}
                                 title={content.title}
@@ -852,9 +865,15 @@ function App() {
                                 frameBorder="0"
                                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                                 referrerPolicy="strict-origin-when-cross-origin"
+                                loading="lazy"
                               />
                             </div>
                             <p className="text-xs text-gray-500 mt-2">📹 {content.content_data}</p>
+                            <div className="mt-2 text-xs text-blue-600">
+                              <a href={content.content_data} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                                🔗 Open in new tab
+                              </a>
+                            </div>
                           </div>
                         ) : 
                         
