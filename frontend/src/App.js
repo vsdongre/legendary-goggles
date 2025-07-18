@@ -478,7 +478,68 @@ function App() {
     );
   };
 
-  const UploadModal = () => {
+  // Memoized Upload Modal Component to prevent re-renders
+  const UploadModal = React.memo(() => {
+    const [localTitle, setLocalTitle] = useState(uploadData.title);
+    const [localContentType, setLocalContentType] = useState(uploadData.content_type);
+    const [localContentData, setLocalContentData] = useState(uploadData.content_data);
+    
+    // Sync with parent state only when modal opens
+    useEffect(() => {
+      if (showUploadModal) {
+        setLocalTitle(uploadData.title);
+        setLocalContentType(uploadData.content_type);
+        setLocalContentData(uploadData.content_data);
+      }
+    }, [showUploadModal]);
+
+    const handleLocalSubmit = useCallback(async (e) => {
+      e.preventDefault();
+      if (!selectedChapter) {
+        alert('Please select a chapter first');
+        return;
+      }
+
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_BASE_URL}/api/content/upload`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            chapter_id: selectedChapter.id,
+            title: localTitle,
+            content_type: localContentType,
+            content_data: localContentData
+          }),
+        });
+
+        if (response.ok) {
+          alert('Content uploaded successfully!');
+          setLocalTitle('');
+          setLocalContentType('text');
+          setLocalContentData('');
+          setUploadData({ title: '', content_type: 'text', content_data: '' });
+          setShowUploadModal(false);
+          // Refresh chapter details
+          if (selectedChapter) {
+            fetchChapterDetails(selectedChapter.id);
+          }
+        } else {
+          const errorData = await response.json();
+          alert(errorData.detail || 'Upload failed');
+        }
+      } catch (err) {
+        alert('Network error. Please try again.');
+      }
+    }, [localTitle, localContentType, localContentData, selectedChapter]);
+
+    const handleClose = useCallback(() => {
+      setShowUploadModal(false);
+    }, []);
+
     if (!showUploadModal) return null;
 
     return (
@@ -487,7 +548,7 @@ function App() {
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold text-gray-900">📤 Upload Content</h2>
             <button
-              onClick={() => setShowUploadModal(false)}
+              onClick={handleClose}
               className="text-gray-500 hover:text-gray-700 text-2xl font-bold"
               type="button"
             >
@@ -504,16 +565,15 @@ function App() {
             </p>
           </div>
 
-          <form onSubmit={handleUpload} className="space-y-6">
+          <form onSubmit={handleLocalSubmit} className="space-y-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 📝 Content Title
               </label>
               <input
-                ref={titleInputRef}
                 type="text"
-                value={uploadData.title}
-                onChange={handleTitleChange}
+                value={localTitle}
+                onChange={(e) => setLocalTitle(e.target.value)}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-lg"
                 placeholder="Enter a descriptive title for your content"
                 required
@@ -526,8 +586,8 @@ function App() {
                 📂 Content Type
               </label>
               <select
-                value={uploadData.content_type}
-                onChange={handleContentTypeChange}
+                value={localContentType}
+                onChange={(e) => setLocalContentType(e.target.value)}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-lg"
               >
                 <option value="text">📝 Text Content</option>
@@ -542,16 +602,15 @@ function App() {
                 📋 Content Data
               </label>
               <textarea
-                ref={contentInputRef}
-                value={uploadData.content_data}
-                onChange={handleContentDataChange}
+                value={localContentData}
+                onChange={(e) => setLocalContentData(e.target.value)}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-lg min-h-[200px] resize-y"
                 placeholder={
-                  uploadData.content_type === 'text' ? 
+                  localContentType === 'text' ? 
                   'Enter your text content here...' :
-                  uploadData.content_type === 'video' ?
+                  localContentType === 'video' ?
                   'Enter video URL (e.g., https://youtube.com/watch?v=...)' :
-                  uploadData.content_type === 'document' ?
+                  localContentType === 'document' ?
                   'Enter document URL or file path' :
                   'Enter image URL'
                 }
@@ -563,7 +622,7 @@ function App() {
             <div className="flex gap-4">
               <button
                 type="button"
-                onClick={() => setShowUploadModal(false)}
+                onClick={handleClose}
                 className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 px-6 py-3 rounded-lg text-lg font-medium transition-all duration-200"
               >
                 Cancel
@@ -579,7 +638,7 @@ function App() {
         </div>
       </div>
     );
-  };
+  });
 
   const Dashboard = () => {
     const completedChapters = userProgress.filter(p => p.completed).length;
