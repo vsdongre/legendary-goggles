@@ -218,6 +218,18 @@ function App() {
     fetchChapterDetails(chapterData.id);
   };
 
+  const handleTitleChange = (e) => {
+    setUploadData(prev => ({...prev, title: e.target.value}));
+  };
+
+  const handleContentTypeChange = (e) => {
+    setUploadData(prev => ({...prev, content_type: e.target.value}));
+  };
+
+  const handleContentDataChange = (e) => {
+    setUploadData(prev => ({...prev, content_data: e.target.value}));
+  };
+
   const handleUpload = async (e) => {
     e.preventDefault();
     if (!selectedChapter) {
