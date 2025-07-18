@@ -132,6 +132,11 @@ def is_valid_path(file_path: str) -> bool:
     except:
         return False
 
+# Root endpoint
+@app.get("/")
+async def root():
+    return {"message": "E-Learning Platform API with LAN File Support"}
+
 # Authentication endpoints
 @app.post("/api/auth/signup")
 async def signup(user: UserCreate):
