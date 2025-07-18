@@ -756,9 +756,10 @@ function App() {
               </button>
               <button
                 type="submit"
-                className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg text-lg font-medium transition-all duration-200 shadow-lg hover:shadow-xl"
+                disabled={isUploading || (uploadMode === 'file' && !selectedFile)}
+                className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg text-lg font-medium transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                📤 Upload Content
+                {isUploading ? '⏳ Uploading...' : '📤 Upload Content'}
               </button>
             </div>
           </form>
