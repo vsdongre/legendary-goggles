@@ -13,6 +13,7 @@ function App() {
   const [selectedSubject, setSelectedSubject] = useState(null);
   const [selectedChapter, setSelectedChapter] = useState(null);
   const [chapterDetails, setChapterDetails] = useState(null);
+  const [userProgress, setUserProgress] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [uploadData, setUploadData] = useState({
@@ -41,6 +42,7 @@ function App() {
         setUser(userData);
         setCurrentView('dashboard');
         fetchClasses();
+        fetchUserProgress(userData.id);
       } else {
         localStorage.removeItem('token');
       }
@@ -97,6 +99,23 @@ function App() {
     }
   };
 
+  const fetchUserProgress = async (userId) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/api/progress/user/${userId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (response.ok) {
+        const progressData = await response.json();
+        setUserProgress(progressData);
+      }
+    } catch (err) {
+      console.error('Error fetching progress:', err);
+    }
+  };
+
   const handleLogin = async (email, password) => {
     setLoading(true);
     setError('');
@@ -115,6 +134,7 @@ function App() {
         setUser(data.user);
         setCurrentView('dashboard');
         fetchClasses();
+        fetchUserProgress(data.user.id);
       } else {
         const errorData = await response.json();
         setError(errorData.detail || 'Login failed');
@@ -144,6 +164,7 @@ function App() {
         setUser(data.user);
         setCurrentView('dashboard');
         fetchClasses();
+        fetchUserProgress(data.user.id);
       } else {
         const errorData = await response.json();
         setError(errorData.detail || 'Signup failed');
@@ -166,6 +187,7 @@ function App() {
     setSelectedSubject(null);
     setSelectedChapter(null);
     setChapterDetails(null);
+    setUserProgress([]);
   };
 
   const handleClassSelect = (classData) => {
@@ -228,6 +250,37 @@ function App() {
     }
   };
 
+  const markChapterComplete = async (chapterId) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/api/progress/update`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          chapter_id: chapterId,
+          completed: true
+        }),
+      });
+
+      if (response.ok) {
+        alert('Chapter marked as complete!');
+        fetchUserProgress(user.id);
+      } else {
+        const errorData = await response.json();
+        alert(errorData.detail || 'Failed to update progress');
+      }
+    } catch (err) {
+      alert('Network error. Please try again.');
+    }
+  };
+
+  const getChapterProgress = (chapterId) => {
+    return userProgress.find(p => p.chapter_id === chapterId);
+  };
+
   const LoginForm = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -242,12 +295,21 @@ function App() {
         <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-xl shadow-lg">
           <div>
             <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-              E-Learning Platform
+              🎓 Enhanced E-Learning Platform
             </h2>
             <p className="mt-2 text-center text-sm text-gray-600">
-              Sign in to access your classes
+              Access your personalized learning experience
             </p>
           </div>
+          
+          <div className="bg-blue-50 p-4 rounded-lg">
+            <h3 className="font-semibold text-blue-900 mb-2">Demo Accounts:</h3>
+            <div className="text-sm text-blue-800">
+              <p><strong>Student:</strong> demo@example.com / Demo123!</p>
+              <p><strong>Admin:</strong> admin@example.com / Admin123!</p>
+            </div>
+          </div>
+
           <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
             <div className="rounded-md shadow-sm -space-y-px">
               <div>
@@ -393,16 +455,26 @@ function App() {
   };
 
   const Dashboard = () => {
+    const completedChapters = userProgress.filter(p => p.completed).length;
+    const totalChapters = userProgress.length;
+    const progressPercentage = totalChapters > 0 ? (completedChapters / totalChapters) * 100 : 0;
+
     return (
       <div className="min-h-screen bg-gray-50">
         <nav className="bg-white shadow-sm">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between h-16">
               <div className="flex items-center">
-                <h1 className="text-xl font-semibold text-gray-900">E-Learning Platform</h1>
+                <h1 className="text-xl font-semibold text-gray-900">🎓 Enhanced E-Learning Platform</h1>
               </div>
               <div className="flex items-center space-x-4">
+                <div className="text-sm text-gray-600">
+                  Progress: {completedChapters}/{totalChapters} chapters ({Math.round(progressPercentage)}%)
+                </div>
                 <span className="text-gray-700">Welcome, {user.username}!</span>
+                <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">
+                  {user.role}
+                </span>
                 <button
                   onClick={handleLogout}
                   className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium"
@@ -418,20 +490,21 @@ function App() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Class Selection */}
             <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Select Class</h2>
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">📚 Select Class</h2>
               <div className="space-y-2">
                 {classes.map((classData) => (
                   <button
                     key={classData.id}
                     onClick={() => handleClassSelect(classData)}
-                    className={`w-full text-left p-3 rounded-md border ${
+                    className={`w-full text-left p-3 rounded-md border transition-all ${
                       selectedClass?.id === classData.id
-                        ? 'bg-indigo-100 border-indigo-500 text-indigo-900'
-                        : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                        ? 'bg-indigo-100 border-indigo-500 text-indigo-900 shadow-md'
+                        : 'bg-gray-50 border-gray-200 hover:bg-gray-100 hover:border-gray-300'
                     }`}
                   >
                     <div className="font-medium">{classData.name}</div>
                     <div className="text-sm text-gray-500">{classData.description}</div>
+                    <div className="text-xs text-gray-400 mt-1">Grade Level: {classData.grade_level}</div>
                   </button>
                 ))}
               </div>
@@ -439,17 +512,17 @@ function App() {
 
             {/* Subject Selection */}
             <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Select Subject</h2>
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">📖 Select Subject</h2>
               {selectedClass ? (
                 <div className="space-y-2">
                   {subjects.map((subject) => (
                     <button
                       key={subject.id}
                       onClick={() => handleSubjectSelect(subject)}
-                      className={`w-full text-left p-3 rounded-md border ${
+                      className={`w-full text-left p-3 rounded-md border transition-all ${
                         selectedSubject?.id === subject.id
-                          ? 'bg-green-100 border-green-500 text-green-900'
-                          : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                          ? 'bg-green-100 border-green-500 text-green-900 shadow-md'
+                          : 'bg-gray-50 border-gray-200 hover:bg-gray-100 hover:border-gray-300'
                       }`}
                     >
                       <div className="font-medium">{subject.name}</div>
@@ -458,32 +531,50 @@ function App() {
                   ))}
                 </div>
               ) : (
-                <p className="text-gray-500 text-sm">Please select a class first</p>
+                <div className="text-center text-gray-500 py-8">
+                  <p>Please select a class first</p>
+                  <p className="text-sm">Choose from the classes on the left</p>
+                </div>
               )}
             </div>
 
             {/* Chapter Selection */}
             <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Select Chapter</h2>
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">📝 Select Chapter</h2>
               {selectedSubject ? (
                 <div className="space-y-2">
-                  {chapters.map((chapter) => (
-                    <button
-                      key={chapter.id}
-                      onClick={() => handleChapterSelect(chapter)}
-                      className={`w-full text-left p-3 rounded-md border ${
-                        selectedChapter?.id === chapter.id
-                          ? 'bg-blue-100 border-blue-500 text-blue-900'
-                          : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
-                      }`}
-                    >
-                      <div className="font-medium">{chapter.name}</div>
-                      <div className="text-sm text-gray-500">{chapter.description}</div>
-                    </button>
-                  ))}
+                  {chapters.map((chapter) => {
+                    const progress = getChapterProgress(chapter.id);
+                    return (
+                      <button
+                        key={chapter.id}
+                        onClick={() => handleChapterSelect(chapter)}
+                        className={`w-full text-left p-3 rounded-md border transition-all ${
+                          selectedChapter?.id === chapter.id
+                            ? 'bg-blue-100 border-blue-500 text-blue-900 shadow-md'
+                            : 'bg-gray-50 border-gray-200 hover:bg-gray-100 hover:border-gray-300'
+                        }`}
+                      >
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <div className="font-medium">{chapter.name}</div>
+                            <div className="text-sm text-gray-500">{chapter.description}</div>
+                          </div>
+                          {progress && progress.completed && (
+                            <div className="text-green-600 text-xs font-medium">
+                              ✓ Completed
+                            </div>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               ) : (
-                <p className="text-gray-500 text-sm">Please select a subject first</p>
+                <div className="text-center text-gray-500 py-8">
+                  <p>Please select a subject first</p>
+                  <p className="text-sm">Choose from the subjects in the middle</p>
+                </div>
               )}
             </div>
           </div>
@@ -491,33 +582,84 @@ function App() {
           {/* Chapter Details */}
           {chapterDetails && (
             <div className="mt-8 bg-white rounded-lg shadow-md p-6">
-              <div className="mb-6">
-                <h3 className="text-xl font-bold text-gray-900 mb-2">
-                  {chapterDetails.chapter.name}
-                </h3>
-                <div className="text-sm text-gray-600 mb-4">
-                  {chapterDetails.class.name} → {chapterDetails.subject.name} → {chapterDetails.chapter.name}
+              <div className="flex justify-between items-start mb-6">
+                <div>
+                  <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                    {chapterDetails.chapter.name}
+                  </h3>
+                  <div className="text-sm text-gray-600 mb-4">
+                    {chapterDetails.class.name} → {chapterDetails.subject.name} → {chapterDetails.chapter.name}
+                  </div>
+                  <p className="text-gray-700 mb-4">{chapterDetails.chapter.description}</p>
                 </div>
-                <p className="text-gray-700 mb-4">{chapterDetails.chapter.description}</p>
-                <div className="prose max-w-none">
-                  <p className="text-gray-800 leading-relaxed">
-                    {chapterDetails.chapter.content}
-                  </p>
-                </div>
+                <button
+                  onClick={() => markChapterComplete(chapterDetails.chapter.id)}
+                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium flex items-center gap-2"
+                >
+                  <span>✓</span>
+                  Mark Complete
+                </button>
+              </div>
+
+              <div className="prose max-w-none mb-6">
+                <h4 className="text-lg font-semibold text-gray-900 mb-3">Chapter Content</h4>
+                <p className="text-gray-800 leading-relaxed">
+                  {chapterDetails.chapter.content}
+                </p>
               </div>
 
               {/* Additional Content */}
               {chapterDetails.content && chapterDetails.content.length > 0 && (
-                <div className="mt-6">
-                  <h4 className="text-lg font-semibold text-gray-900 mb-4">Additional Content</h4>
-                  <div className="space-y-4">
+                <div className="mb-6">
+                  <h4 className="text-lg font-semibold text-gray-900 mb-4">📎 Additional Content</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {chapterDetails.content.map((content) => (
-                      <div key={content.id} className="border rounded-md p-4">
+                      <div key={content.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
                         <h5 className="font-medium text-gray-900 mb-2">{content.title}</h5>
                         <span className="inline-block bg-gray-100 text-gray-800 px-2 py-1 rounded text-sm mb-2">
                           {content.content_type}
                         </span>
-                        <p className="text-gray-700">{content.content_data}</p>
+                        <p className="text-gray-700 text-sm">{content.content_data}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Assignments */}
+              {chapterDetails.assignments && chapterDetails.assignments.length > 0 && (
+                <div className="mb-6">
+                  <h4 className="text-lg font-semibold text-gray-900 mb-4">📋 Assignments</h4>
+                  <div className="space-y-4">
+                    {chapterDetails.assignments.map((assignment) => (
+                      <div key={assignment.id} className="border-l-4 border-orange-400 pl-4 py-3 bg-orange-50 rounded-r-lg">
+                        <h5 className="font-medium text-orange-900 mb-1">{assignment.title}</h5>
+                        <p className="text-orange-800 text-sm mb-2">{assignment.description}</p>
+                        <div className="flex justify-between items-center text-sm text-orange-700">
+                          <span>Points: {assignment.points}</span>
+                          {assignment.due_date && (
+                            <span>Due: {new Date(assignment.due_date).toLocaleDateString()}</span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Quizzes */}
+              {chapterDetails.quizzes && chapterDetails.quizzes.length > 0 && (
+                <div className="mb-6">
+                  <h4 className="text-lg font-semibold text-gray-900 mb-4">🎯 Quizzes</h4>
+                  <div className="space-y-4">
+                    {chapterDetails.quizzes.map((quiz) => (
+                      <div key={quiz.id} className="border-l-4 border-purple-400 pl-4 py-3 bg-purple-50 rounded-r-lg">
+                        <h5 className="font-medium text-purple-900 mb-1">{quiz.title}</h5>
+                        <p className="text-purple-800 text-sm mb-2">{quiz.description}</p>
+                        <div className="flex justify-between items-center text-sm text-purple-700">
+                          <span>Questions: {quiz.questions.length}</span>
+                          <span>Time Limit: {quiz.time_limit} minutes</span>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -529,7 +671,7 @@ function App() {
           {/* Upload Section */}
           {selectedChapter && (
             <div className="mt-8 bg-white rounded-lg shadow-md p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Upload Content</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">📤 Upload Content</h3>
               <form onSubmit={handleUpload} className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -554,10 +696,10 @@ function App() {
                     onChange={(e) => setUploadData({...uploadData, content_type: e.target.value})}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                   >
-                    <option value="text">Text</option>
-                    <option value="video">Video URL</option>
-                    <option value="document">Document</option>
-                    <option value="image">Image URL</option>
+                    <option value="text">📝 Text</option>
+                    <option value="video">🎥 Video URL</option>
+                    <option value="document">📄 Document</option>
+                    <option value="image">🖼️ Image URL</option>
                   </select>
                 </div>
 

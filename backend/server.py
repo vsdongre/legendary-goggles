@@ -27,6 +27,9 @@ classes_collection = db.classes
 subjects_collection = db.subjects
 chapters_collection = db.chapters
 content_collection = db.content
+assignments_collection = db.assignments
+quizzes_collection = db.quizzes
+progress_collection = db.progress
 
 app = FastAPI()
 
@@ -81,6 +84,25 @@ class ContentUpload(BaseModel):
     content_type: str  # "text", "video", "document", "image"
     content_data: str
 
+class AssignmentCreate(BaseModel):
+    title: str
+    description: str
+    chapter_id: str
+    due_date: Optional[str] = None
+    points: int = 100
+
+class QuizCreate(BaseModel):
+    title: str
+    description: str
+    chapter_id: str
+    questions: List[dict]
+    time_limit: int = 30  # minutes
+
+class ProgressUpdate(BaseModel):
+    chapter_id: str
+    completed: bool = True
+    score: Optional[int] = None
+
 # Helper functions
 def hash_password(password: str) -> str:
     return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
@@ -108,118 +130,245 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
     except jwt.PyJWTError:
         raise HTTPException(status_code=401, detail="Invalid token")
 
-# Initialize sample data
+# Initialize comprehensive sample data
 def initialize_sample_data():
+    # Create admin user if doesn't exist
+    admin_user = users_collection.find_one({"email": "admin@example.com"})
+    if not admin_user:
+        admin_user = {
+            "id": str(uuid.uuid4()),
+            "username": "admin",
+            "email": "admin@example.com",
+            "password_hash": hash_password("Admin123!"),
+            "role": "admin",
+            "created_at": datetime.utcnow()
+        }
+        users_collection.insert_one(admin_user)
+    
     # Check if classes already exist
     if classes_collection.count_documents({}) == 0:
-        # Create sample classes
+        # Create comprehensive classes
         classes_data = [
             {
                 "id": str(uuid.uuid4()),
                 "name": "Class 1",
-                "description": "First Grade",
+                "description": "First Grade - Foundation Learning",
                 "grade_level": 1,
                 "created_at": datetime.utcnow()
             },
             {
                 "id": str(uuid.uuid4()),
                 "name": "Class 2",
-                "description": "Second Grade",
+                "description": "Second Grade - Building Skills",
                 "grade_level": 2,
                 "created_at": datetime.utcnow()
             },
             {
                 "id": str(uuid.uuid4()),
                 "name": "Class 3",
-                "description": "Third Grade",
+                "description": "Third Grade - Advanced Learning",
                 "grade_level": 3,
+                "created_at": datetime.utcnow()
+            },
+            {
+                "id": str(uuid.uuid4()),
+                "name": "Class 4",
+                "description": "Fourth Grade - Intermediate Level",
+                "grade_level": 4,
+                "created_at": datetime.utcnow()
+            },
+            {
+                "id": str(uuid.uuid4()),
+                "name": "Class 5",
+                "description": "Fifth Grade - Advanced Concepts",
+                "grade_level": 5,
                 "created_at": datetime.utcnow()
             }
         ]
         classes_collection.insert_many(classes_data)
         
-        # Create sample subjects
-        class_1_id = classes_data[0]["id"]
-        class_2_id = classes_data[1]["id"]
+        # Create comprehensive subjects
+        subjects_data = []
+        for class_data in classes_data:
+            class_id = class_data["id"]
+            # Common subjects for all classes
+            subjects_data.extend([
+                {
+                    "id": str(uuid.uuid4()),
+                    "name": "Mathematics",
+                    "description": f"Math concepts for {class_data['name']}",
+                    "class_id": class_id,
+                    "created_at": datetime.utcnow()
+                },
+                {
+                    "id": str(uuid.uuid4()),
+                    "name": "English",
+                    "description": f"Language and Literature for {class_data['name']}",
+                    "class_id": class_id,
+                    "created_at": datetime.utcnow()
+                },
+                {
+                    "id": str(uuid.uuid4()),
+                    "name": "Science",
+                    "description": f"Science concepts for {class_data['name']}",
+                    "class_id": class_id,
+                    "created_at": datetime.utcnow()
+                },
+                {
+                    "id": str(uuid.uuid4()),
+                    "name": "Social Studies",
+                    "description": f"History and Geography for {class_data['name']}",
+                    "class_id": class_id,
+                    "created_at": datetime.utcnow()
+                }
+            ])
         
-        subjects_data = [
-            {
-                "id": str(uuid.uuid4()),
-                "name": "Mathematics",
-                "description": "Basic Math Concepts",
-                "class_id": class_1_id,
-                "created_at": datetime.utcnow()
-            },
-            {
-                "id": str(uuid.uuid4()),
-                "name": "English",
-                "description": "Language and Literature",
-                "class_id": class_1_id,
-                "created_at": datetime.utcnow()
-            },
-            {
-                "id": str(uuid.uuid4()),
-                "name": "Science",
-                "description": "Basic Science Concepts",
-                "class_id": class_1_id,
-                "created_at": datetime.utcnow()
-            },
-            {
-                "id": str(uuid.uuid4()),
-                "name": "Mathematics",
-                "description": "Intermediate Math",
-                "class_id": class_2_id,
-                "created_at": datetime.utcnow()
-            },
-            {
-                "id": str(uuid.uuid4()),
-                "name": "English",
-                "description": "Advanced Language Skills",
-                "class_id": class_2_id,
-                "created_at": datetime.utcnow()
-            }
-        ]
         subjects_collection.insert_many(subjects_data)
         
-        # Create sample chapters
-        math_subject_id = subjects_data[0]["id"]
-        english_subject_id = subjects_data[1]["id"]
+        # Create comprehensive chapters
+        chapters_data = []
+        for subject in subjects_data:
+            subject_id = subject["id"]
+            subject_name = subject["name"]
+            
+            if subject_name == "Mathematics":
+                chapters_data.extend([
+                    {
+                        "id": str(uuid.uuid4()),
+                        "name": "Numbers and Counting",
+                        "description": "Learn basic numbers and counting",
+                        "subject_id": subject_id,
+                        "content": "This chapter introduces students to the world of numbers. Students will learn to recognize numbers from 1 to 100, understand the concept of quantity, and practice counting objects. Activities include number recognition games, counting exercises, and simple number patterns.",
+                        "created_at": datetime.utcnow()
+                    },
+                    {
+                        "id": str(uuid.uuid4()),
+                        "name": "Addition and Subtraction",
+                        "description": "Basic arithmetic operations",
+                        "subject_id": subject_id,
+                        "content": "Students will master the fundamental operations of addition and subtraction. Starting with single-digit numbers, they will progress to double-digit calculations. Visual aids, manipulatives, and real-world examples help students understand these concepts.",
+                        "created_at": datetime.utcnow()
+                    },
+                    {
+                        "id": str(uuid.uuid4()),
+                        "name": "Shapes and Geometry",
+                        "description": "Basic geometric shapes and properties",
+                        "subject_id": subject_id,
+                        "content": "Explore the world of shapes! Students will identify and describe basic geometric shapes including circles, squares, triangles, and rectangles. They will learn about shape properties, symmetry, and spatial relationships through hands-on activities.",
+                        "created_at": datetime.utcnow()
+                    }
+                ])
+            elif subject_name == "English":
+                chapters_data.extend([
+                    {
+                        "id": str(uuid.uuid4()),
+                        "name": "Alphabets and Phonics",
+                        "description": "Learn letters and sounds",
+                        "subject_id": subject_id,
+                        "content": "Master the English alphabet and phonics system. Students will learn letter recognition, both uppercase and lowercase, and understand the sounds each letter makes. Interactive activities include letter tracing, sound games, and phonics exercises.",
+                        "created_at": datetime.utcnow()
+                    },
+                    {
+                        "id": str(uuid.uuid4()),
+                        "name": "Reading Comprehension",
+                        "description": "Understanding and interpreting text",
+                        "subject_id": subject_id,
+                        "content": "Develop strong reading skills through engaging stories and exercises. Students will learn to understand main ideas, identify details, make predictions, and answer questions about what they read. Age-appropriate texts and interactive activities enhance comprehension.",
+                        "created_at": datetime.utcnow()
+                    },
+                    {
+                        "id": str(uuid.uuid4()),
+                        "name": "Creative Writing",
+                        "description": "Express ideas through writing",
+                        "subject_id": subject_id,
+                        "content": "Unleash creativity through writing! Students will learn to express their thoughts and ideas through various writing forms including stories, poems, and descriptive paragraphs. Grammar, vocabulary, and creative expression are emphasized.",
+                        "created_at": datetime.utcnow()
+                    }
+                ])
+            elif subject_name == "Science":
+                chapters_data.extend([
+                    {
+                        "id": str(uuid.uuid4()),
+                        "name": "Living and Non-Living Things",
+                        "description": "Understand the difference between living and non-living",
+                        "subject_id": subject_id,
+                        "content": "Explore the natural world by learning to distinguish between living and non-living things. Students will discover the characteristics of life, observe plants and animals, and understand basic life processes through experiments and observations.",
+                        "created_at": datetime.utcnow()
+                    },
+                    {
+                        "id": str(uuid.uuid4()),
+                        "name": "Weather and Seasons",
+                        "description": "Learn about weather patterns and seasonal changes",
+                        "subject_id": subject_id,
+                        "content": "Discover the fascinating world of weather and seasons! Students will learn about different weather conditions, seasonal changes, and how weather affects our daily lives. Activities include weather observation, seasonal activities, and simple weather experiments.",
+                        "created_at": datetime.utcnow()
+                    }
+                ])
+            elif subject_name == "Social Studies":
+                chapters_data.extend([
+                    {
+                        "id": str(uuid.uuid4()),
+                        "name": "My Family and Community",
+                        "description": "Understanding family structures and community roles",
+                        "subject_id": subject_id,
+                        "content": "Explore the importance of family and community in our lives. Students will learn about different family structures, community helpers, and how people work together to create a better society. Activities include family tree creation and community exploration.",
+                        "created_at": datetime.utcnow()
+                    },
+                    {
+                        "id": str(uuid.uuid4()),
+                        "name": "Maps and Locations",
+                        "description": "Basic geography and map reading skills",
+                        "subject_id": subject_id,
+                        "content": "Learn to navigate the world through maps! Students will understand basic map concepts, directions (north, south, east, west), and how to locate places on simple maps. Interactive map activities and location games make learning fun.",
+                        "created_at": datetime.utcnow()
+                    }
+                ])
         
-        chapters_data = [
-            {
+        chapters_collection.insert_many(chapters_data)
+        
+        # Create sample assignments and quizzes
+        sample_assignments = []
+        sample_quizzes = []
+        
+        for chapter in chapters_data[:5]:  # Create assignments for first 5 chapters
+            assignment = {
                 "id": str(uuid.uuid4()),
-                "name": "Numbers and Counting",
-                "description": "Learn to count and understand numbers",
-                "subject_id": math_subject_id,
-                "content": "This chapter introduces basic counting and number recognition. Students will learn to count from 1 to 100 and understand the concept of numbers.",
-                "created_at": datetime.utcnow()
-            },
-            {
-                "id": str(uuid.uuid4()),
-                "name": "Addition and Subtraction",
-                "description": "Basic arithmetic operations",
-                "subject_id": math_subject_id,
-                "content": "In this chapter, students will learn how to add and subtract numbers. We will start with single-digit numbers and progress to double-digit numbers.",
-                "created_at": datetime.utcnow()
-            },
-            {
-                "id": str(uuid.uuid4()),
-                "name": "Alphabets and Phonics",
-                "description": "Learn letters and sounds",
-                "subject_id": english_subject_id,
-                "content": "This chapter focuses on learning the English alphabet and understanding the sounds each letter makes. Students will practice writing letters and identifying sounds.",
-                "created_at": datetime.utcnow()
-            },
-            {
-                "id": str(uuid.uuid4()),
-                "name": "Simple Words and Sentences",
-                "description": "Building vocabulary and sentences",
-                "subject_id": english_subject_id,
-                "content": "Students will learn to form simple words and construct basic sentences. This chapter builds on the phonics foundation to create meaningful communication.",
+                "title": f"Assignment: {chapter['name']}",
+                "description": f"Complete the exercises related to {chapter['name']}. This assignment will test your understanding of the key concepts covered in this chapter.",
+                "chapter_id": chapter["id"],
+                "due_date": (datetime.utcnow() + timedelta(days=7)).isoformat(),
+                "points": 100,
                 "created_at": datetime.utcnow()
             }
-        ]
-        chapters_collection.insert_many(chapters_data)
+            sample_assignments.append(assignment)
+            
+            # Create sample quiz
+            quiz = {
+                "id": str(uuid.uuid4()),
+                "title": f"Quiz: {chapter['name']}",
+                "description": f"Test your knowledge of {chapter['name']} with this interactive quiz.",
+                "chapter_id": chapter["id"],
+                "questions": [
+                    {
+                        "question": f"What is the main topic of {chapter['name']}?",
+                        "options": ["Option A", "Option B", "Option C", "Option D"],
+                        "correct_answer": 0,
+                        "points": 5
+                    },
+                    {
+                        "question": f"Which concept is most important in {chapter['name']}?",
+                        "options": ["Concept 1", "Concept 2", "Concept 3", "Concept 4"],
+                        "correct_answer": 1,
+                        "points": 5
+                    }
+                ],
+                "time_limit": 30,
+                "created_at": datetime.utcnow()
+            }
+            sample_quizzes.append(quiz)
+        
+        assignments_collection.insert_many(sample_assignments)
+        quizzes_collection.insert_many(sample_quizzes)
 
 # Initialize data on startup
 initialize_sample_data()
@@ -227,7 +376,7 @@ initialize_sample_data()
 # Routes
 @app.get("/")
 async def root():
-    return {"message": "E-Learning Platform API - Class/Subject/Chapter Structure"}
+    return {"message": "Enhanced E-Learning Platform API - Full Featured"}
 
 @app.post("/api/auth/signup")
 async def signup(user_data: UserSignup):
@@ -321,11 +470,19 @@ async def get_chapter_details(chapter_id: str):
     # Get content for this chapter
     content = list(content_collection.find({"chapter_id": chapter_id}, {"_id": 0}))
     
+    # Get assignments for this chapter
+    assignments = list(assignments_collection.find({"chapter_id": chapter_id}, {"_id": 0}))
+    
+    # Get quizzes for this chapter
+    quizzes = list(quizzes_collection.find({"chapter_id": chapter_id}, {"_id": 0}))
+    
     return {
         "chapter": chapter,
         "subject": subject,
         "class": class_info,
-        "content": content
+        "content": content,
+        "assignments": assignments,
+        "quizzes": quizzes
     }
 
 @app.post("/api/content/upload")
@@ -402,7 +559,58 @@ async def get_chapter_content(chapter_id: str):
     content = list(content_collection.find({"chapter_id": chapter_id}, {"_id": 0}))
     return content
 
-# Admin routes (for adding new classes, subjects, chapters)
+@app.get("/api/assignments/{chapter_id}")
+async def get_chapter_assignments(chapter_id: str):
+    assignments = list(assignments_collection.find({"chapter_id": chapter_id}, {"_id": 0}))
+    return assignments
+
+@app.get("/api/quizzes/{chapter_id}")
+async def get_chapter_quizzes(chapter_id: str):
+    quizzes = list(quizzes_collection.find({"chapter_id": chapter_id}, {"_id": 0}))
+    return quizzes
+
+@app.post("/api/progress/update")
+async def update_progress(progress_data: ProgressUpdate, current_user: dict = Depends(get_current_user)):
+    # Check if chapter exists
+    chapter = chapters_collection.find_one({"id": progress_data.chapter_id})
+    if not chapter:
+        raise HTTPException(status_code=404, detail="Chapter not found")
+    
+    # Update or create progress record
+    progress_record = {
+        "id": str(uuid.uuid4()),
+        "user_id": current_user["id"],
+        "chapter_id": progress_data.chapter_id,
+        "completed": progress_data.completed,
+        "score": progress_data.score,
+        "completed_at": datetime.utcnow()
+    }
+    
+    # Check if progress already exists
+    existing_progress = progress_collection.find_one({
+        "user_id": current_user["id"],
+        "chapter_id": progress_data.chapter_id
+    })
+    
+    if existing_progress:
+        progress_collection.update_one(
+            {"id": existing_progress["id"]},
+            {"$set": {"completed": progress_data.completed, "score": progress_data.score, "completed_at": datetime.utcnow()}}
+        )
+    else:
+        progress_collection.insert_one(progress_record)
+    
+    return {"message": "Progress updated successfully"}
+
+@app.get("/api/progress/user/{user_id}")
+async def get_user_progress(user_id: str, current_user: dict = Depends(get_current_user)):
+    if current_user["id"] != user_id and current_user["role"] != "admin":
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    progress_records = list(progress_collection.find({"user_id": user_id}, {"_id": 0}))
+    return progress_records
+
+# Admin routes
 @app.post("/api/admin/class")
 async def create_class(class_data: ClassCreate, current_user: dict = Depends(get_current_user)):
     if current_user["role"] != "admin":
@@ -454,6 +662,44 @@ async def create_chapter(chapter_data: ChapterCreate, current_user: dict = Depen
     chapters_collection.insert_one(chapter_record)
     
     return {"message": "Chapter created successfully", "chapter_id": chapter_record["id"]}
+
+@app.post("/api/admin/assignment")
+async def create_assignment(assignment_data: AssignmentCreate, current_user: dict = Depends(get_current_user)):
+    if current_user["role"] != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    assignment_record = {
+        "id": str(uuid.uuid4()),
+        "title": assignment_data.title,
+        "description": assignment_data.description,
+        "chapter_id": assignment_data.chapter_id,
+        "due_date": assignment_data.due_date,
+        "points": assignment_data.points,
+        "created_at": datetime.utcnow()
+    }
+    
+    assignments_collection.insert_one(assignment_record)
+    
+    return {"message": "Assignment created successfully", "assignment_id": assignment_record["id"]}
+
+@app.post("/api/admin/quiz")
+async def create_quiz(quiz_data: QuizCreate, current_user: dict = Depends(get_current_user)):
+    if current_user["role"] != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    quiz_record = {
+        "id": str(uuid.uuid4()),
+        "title": quiz_data.title,
+        "description": quiz_data.description,
+        "chapter_id": quiz_data.chapter_id,
+        "questions": quiz_data.questions,
+        "time_limit": quiz_data.time_limit,
+        "created_at": datetime.utcnow()
+    }
+    
+    quizzes_collection.insert_one(quiz_record)
+    
+    return {"message": "Quiz created successfully", "quiz_id": quiz_record["id"]}
 
 if __name__ == "__main__":
     import uvicorn
