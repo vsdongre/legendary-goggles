@@ -342,7 +342,7 @@ def main():
         print("❌ User info retrieval failed")
         return 1
     
-    # Test 6: Test hierarchical data structure
+    # Test 7: Test hierarchical data structure
     print(f"\n📚 Testing hierarchical data structure")
     
     # Test subjects for each class
