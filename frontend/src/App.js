@@ -604,6 +604,37 @@ function App() {
             </p>
           </div>
 
+          {/* Upload Mode Selection */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              📤 Upload Method
+            </label>
+            <div className="flex gap-4">
+              <button
+                type="button"
+                onClick={() => setUploadMode('text')}
+                className={`flex-1 px-4 py-2 border rounded-lg text-sm font-medium transition-all ${
+                  uploadMode === 'text' 
+                    ? 'bg-indigo-600 text-white border-indigo-600' 
+                    : 'bg-gray-50 text-gray-700 border-gray-300 hover:bg-gray-100'
+                }`}
+              >
+                📝 Text/URL Input
+              </button>
+              <button
+                type="button"
+                onClick={() => setUploadMode('file')}
+                className={`flex-1 px-4 py-2 border rounded-lg text-sm font-medium transition-all ${
+                  uploadMode === 'file' 
+                    ? 'bg-indigo-600 text-white border-indigo-600' 
+                    : 'bg-gray-50 text-gray-700 border-gray-300 hover:bg-gray-100'
+                }`}
+              >
+                📁 File Upload
+              </button>
+            </div>
+          </div>
+
           <form onSubmit={handleLocalSubmit} className="space-y-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
