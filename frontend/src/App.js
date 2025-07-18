@@ -218,17 +218,21 @@ function App() {
     fetchChapterDetails(chapterData.id);
   };
 
-  const handleTitleChange = (e) => {
-    setUploadData(prev => ({...prev, title: e.target.value}));
-  };
+  // Fix for input focus issues with useCallback to prevent re-renders
+  const handleTitleChange = useCallback((e) => {
+    const value = e.target.value;
+    setUploadData(prev => ({...prev, title: value}));
+  }, []);
 
-  const handleContentTypeChange = (e) => {
-    setUploadData(prev => ({...prev, content_type: e.target.value}));
-  };
+  const handleContentTypeChange = useCallback((e) => {
+    const value = e.target.value;
+    setUploadData(prev => ({...prev, content_type: value}));
+  }, []);
 
-  const handleContentDataChange = (e) => {
-    setUploadData(prev => ({...prev, content_data: e.target.value}));
-  };
+  const handleContentDataChange = useCallback((e) => {
+    const value = e.target.value;
+    setUploadData(prev => ({...prev, content_data: value}));
+  }, []);
 
   const handleUpload = async (e) => {
     e.preventDefault();
