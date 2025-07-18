@@ -1175,10 +1175,13 @@ function App() {
                               className="w-full h-48 object-cover rounded-lg"
                               onError={(e) => {
                                 e.target.style.display = 'none';
-                                e.target.nextSibling.style.display = 'block';
+                                const fallbackDiv = e.target.parentElement.querySelector('.image-fallback');
+                                if (fallbackDiv) {
+                                  fallbackDiv.style.display = 'block';
+                                }
                               }}
                             />
-                            <div className="hidden p-4 bg-gray-100 rounded-lg text-center">
+                            <div className="image-fallback hidden p-4 bg-gray-100 rounded-lg text-center">
                               <p className="text-gray-600">🖼️ Image: {content.content_data}</p>
                             </div>
                           </div>
