@@ -44,6 +44,42 @@ os.makedirs("uploads/documents", exist_ok=True)
 # Mount static files for uploaded content
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
+# Add custom endpoint to serve video files with proper content-type
+@app.get("/uploads/{file_path:path}")
+async def serve_uploaded_file(file_path: str):
+    from fastapi.responses import FileResponse
+    import mimetypes
+    
+    file_full_path = f"uploads/{file_path}"
+    
+    # Check if file exists
+    if not os.path.exists(file_full_path):
+        raise HTTPException(status_code=404, detail="File not found")
+    
+    # Get MIME type
+    mime_type, _ = mimetypes.guess_type(file_full_path)
+    if mime_type is None:
+        if file_path.endswith('.mp4'):
+            mime_type = 'video/mp4'
+        elif file_path.endswith('.avi'):
+            mime_type = 'video/x-msvideo'
+        elif file_path.endswith('.mov'):
+            mime_type = 'video/quicktime'
+        elif file_path.endswith('.webm'):
+            mime_type = 'video/webm'
+        else:
+            mime_type = 'application/octet-stream'
+    
+    return FileResponse(
+        file_full_path,
+        media_type=mime_type,
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "*",
+            "Access-Control-Allow-Headers": "*",
+        }
+    )
+
 # CORS configuration
 app.add_middleware(
     CORSMiddleware,
