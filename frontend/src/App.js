@@ -768,64 +768,24 @@ function App() {
             </div>
           )}
 
-          {/* Upload Section */}
+          {/* Upload Button */}
           {selectedChapter && (
-            <div className="mt-8 bg-white rounded-lg shadow-md p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">📤 Upload Content</h3>
-              <form onSubmit={handleUpload} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Content Title
-                  </label>
-                  <input
-                    type="text"
-                    value={uploadData.title}
-                    onChange={(e) => setUploadData({...uploadData, title: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                    placeholder="Enter content title"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Content Type
-                  </label>
-                  <select
-                    value={uploadData.content_type}
-                    onChange={(e) => setUploadData({...uploadData, content_type: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                  >
-                    <option value="text">📝 Text</option>
-                    <option value="video">🎥 Video URL</option>
-                    <option value="document">📄 Document</option>
-                    <option value="image">🖼️ Image URL</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Content Data
-                  </label>
-                  <textarea
-                    value={uploadData.content_data}
-                    onChange={(e) => setUploadData({...uploadData, content_data: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                    rows={4}
-                    placeholder="Enter content data (text, URL, etc.)"
-                    required
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-sm font-medium"
-                >
-                  Upload Content
-                </button>
-              </form>
+            <div className="mt-8 bg-white rounded-lg shadow-md p-6 text-center">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">📤 Want to Add More Content?</h3>
+              <p className="text-gray-600 mb-6">
+                Upload additional educational materials to enrich this chapter for all students.
+              </p>
+              <button
+                onClick={() => setShowUploadModal(true)}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-4 rounded-lg text-lg font-medium transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
+              >
+                📤 Upload Content
+              </button>
             </div>
           )}
+
+          {/* Upload Modal */}
+          <UploadModal />
         </div>
       </div>
     );
