@@ -772,7 +772,9 @@ function App() {
               {chapterDetails.content && chapterDetails.content.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {chapterDetails.content.map((content) => {
-                    const fileType = getFileType(content.file_path);
+                    // Handle both old and new content structures
+                    const filePath = content.file_path || content.content_data;
+                    const fileType = getFileType(filePath);
                     const fileIcon = getFileIcon(fileType);
                     const fileColor = getFileColor(fileType);
                     
@@ -794,7 +796,7 @@ function App() {
                         
                         <div className="flex justify-between items-center">
                           <span className="text-xs text-gray-500 font-mono bg-gray-100 px-2 py-1 rounded">
-                            {content.file_path}
+                            {filePath ? filePath.substring(0, 50) + (filePath.length > 50 ? '...' : '') : 'No path'}
                           </span>
                           <button
                             onClick={() => openContent(content.id)}
