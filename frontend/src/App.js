@@ -283,7 +283,7 @@ function App() {
     }
   };
 
-  // Content opening function
+  // Content opening function - DIRECT FILE OPENING
   const openContent = async (contentId) => {
     try {
       const token = localStorage.getItem('token');
@@ -295,131 +295,31 @@ function App() {
         const data = await response.json();
         
         if (data.type === 'url') {
-          // Open URL in new tab
+          // Open URL in new tab - WORKS IMMEDIATELY
           window.open(data.path, '_blank');
         } else if (data.type === 'file') {
-          // Check file type for specific instructions
-          const isVideo = data.content_type === 'video' || 
-                         data.path.match(/\.(mp4|avi|mov|wmv|webm|mkv|flv)$/i);
-          const isPdf = data.content_type === 'pdf' || 
-                       data.path.match(/\.pdf$/i);
-          const isDocument = data.content_type === 'document' || 
-                            data.path.match(/\.(doc|docx)$/i);
-          const isSpreadsheet = data.content_type === 'spreadsheet' || 
-                               data.path.match(/\.(xls|xlsx|csv)$/i);
-          const isPresentation = data.content_type === 'presentation' || 
-                                data.path.match(/\.(ppt|pptx)$/i);
-          
           const isUrl = data.path.startsWith('http://') || data.path.startsWith('https://');
           
           if (isUrl) {
-            // Open web URLs directly
+            // Open web URLs directly - WORKS IMMEDIATELY
             window.open(data.path, '_blank');
-          } else if (isPdf) {
-            // PDF-specific instructions
-            const message = `📕 PDF Document: ${data.title}\n\n` +
-                          `📍 File Location: ${data.path}\n\n` +
-                          `📖 To Open PDF:\n` +
-                          `1. Copy the file path (already copied!)\n` +
-                          `2. Open File Explorer or Finder\n` +
-                          `3. Paste the path in address bar (Ctrl+V)\n` +
-                          `4. Double-click the PDF file to open\n\n` +
-                          `💡 Tip: PDF will open in your default PDF reader\n` +
-                          `(Adobe Reader, Edge, Chrome, Firefox, etc.)`;
-            
-            try {
-              await navigator.clipboard.writeText(data.path);
-              alert(message);
-            } catch (err) {
-              alert(`📕 PDF: ${data.title}\nPath: ${data.path}\n\nPlease copy this path manually to access the PDF file.`);
-            }
-          } else if (isVideo) {
-            // Video-specific instructions
-            const message = `🎥 Video: ${data.title}\n\n` +
-                          `📍 File Location: ${data.path}\n\n` +
-                          `🎬 To Play Video:\n` +
-                          `1. Copy the file path (already copied!)\n` +
-                          `2. Open File Explorer or Finder\n` +
-                          `3. Paste the path in address bar (Ctrl+V)\n` +
-                          `4. Double-click the video file to play\n\n` +
-                          `💡 Tip: Video will open in your default video player\n` +
-                          `(Windows Media Player, VLC, QuickTime, etc.)`;
-            
-            try {
-              await navigator.clipboard.writeText(data.path);
-              alert(message);
-            } catch (err) {
-              alert(`🎥 Video: ${data.title}\nPath: ${data.path}\n\nPlease copy this path manually to access the video file.`);
-            }
-          } else if (isDocument) {
-            // Document-specific instructions
-            const message = `📄 Document: ${data.title}\n\n` +
-                          `📍 File Location: ${data.path}\n\n` +
-                          `📝 To Open Document:\n` +
-                          `1. Copy the file path (already copied!)\n` +
-                          `2. Open File Explorer or Finder\n` +
-                          `3. Paste the path in address bar (Ctrl+V)\n` +
-                          `4. Double-click the document to open\n\n` +
-                          `💡 Tip: Document will open in Word, LibreOffice, or default editor`;
-            
-            try {
-              await navigator.clipboard.writeText(data.path);
-              alert(message);
-            } catch (err) {
-              alert(`📄 Document: ${data.title}\nPath: ${data.path}\n\nPlease copy this path manually to access the document.`);
-            }
-          } else if (isSpreadsheet) {
-            // Spreadsheet-specific instructions
-            const message = `📊 Spreadsheet: ${data.title}\n\n` +
-                          `📍 File Location: ${data.path}\n\n` +
-                          `📈 To Open Spreadsheet:\n` +
-                          `1. Copy the file path (already copied!)\n` +
-                          `2. Open File Explorer or Finder\n` +
-                          `3. Paste the path in address bar (Ctrl+V)\n` +
-                          `4. Double-click the file to open\n\n` +
-                          `💡 Tip: Will open in Excel, LibreOffice Calc, or default spreadsheet app`;
-            
-            try {
-              await navigator.clipboard.writeText(data.path);
-              alert(message);
-            } catch (err) {
-              alert(`📊 Spreadsheet: ${data.title}\nPath: ${data.path}\n\nPlease copy this path manually to access the spreadsheet.`);
-            }
-          } else if (isPresentation) {
-            // Presentation-specific instructions
-            const message = `📺 Presentation: ${data.title}\n\n` +
-                          `📍 File Location: ${data.path}\n\n` +
-                          `🎯 To Open Presentation:\n` +
-                          `1. Copy the file path (already copied!)\n` +
-                          `2. Open File Explorer or Finder\n` +
-                          `3. Paste the path in address bar (Ctrl+V)\n` +
-                          `4. Double-click the file to open\n\n` +
-                          `💡 Tip: Will open in PowerPoint, LibreOffice Impress, or default presentation app`;
-            
-            try {
-              await navigator.clipboard.writeText(data.path);
-              alert(message);
-            } catch (err) {
-              alert(`📺 Presentation: ${data.title}\nPath: ${data.path}\n\nPlease copy this path manually to access the presentation.`);
-            }
           } else {
-            // General file instructions
-            const message = `File: ${data.title}\nPath: ${data.path}\n\nFor LAN access:\n1. Copy the file path\n2. Open File Explorer\n3. Paste the path in the address bar\n\nPath copied to clipboard!`;
-            
+            // For local files - DIRECT OPENING VIA FILE PROTOCOL
             try {
-              await navigator.clipboard.writeText(data.path);
-              alert(message);
+              // Try direct file protocol (works in some browsers)
+              const fileUrl = `file:///${data.path.replace(/\\/g, '/')}`;
+              window.open(fileUrl, '_blank');
             } catch (err) {
-              alert(`File: ${data.title}\nPath: ${data.path}\n\nPlease copy this path manually to access the file.`);
+              // Fallback: Use a more compatible approach
+              const link = document.createElement('a');
+              link.href = `file:///${data.path.replace(/\\/g, '/')}`;
+              link.target = '_blank';
+              link.click();
             }
           }
         } else if (data.type === 'text') {
-          // For text content, show in a better modal
-          const message = `Content: ${data.title}\n\n${data.content}`;
-          alert(message);
-        } else {
-          // Fallback for other types
-          alert(`Content: ${data.title}\nPath: ${data.path}`);
+          // Show text content directly
+          alert(`${data.title}\n\n${data.content}`);
         }
       } else {
         alert('Failed to open content');
