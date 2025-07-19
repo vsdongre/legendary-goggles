@@ -185,10 +185,14 @@ metadata:
   run_ui: false
 
 test_plan:
-  current_focus: []
+  current_focus:
+    - "LAN File Path Storage"
+    - "Content Creation API"
+    - "LAN File Path Input Interface"
+    - "Local File Opening with Instructions"
   stuck_tasks: []
   test_all: false
-  test_priority: "complete"
+  test_priority: "high_first"
 
 agent_communication:
   - agent: "main"
