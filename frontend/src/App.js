@@ -306,6 +306,12 @@ function App() {
             const fileUrl = `file:///${data.path.replace(/\\/g, '/')}`;
             window.open(fileUrl, '_blank');
           }
+        } else if (data.type === 'text') {
+          // For text content, show in a modal or alert
+          alert(`Content: ${data.title}\n\n${data.content}`);
+        } else {
+          // Fallback for other types
+          alert(`Content: ${data.title}\nPath: ${data.path}`);
         }
       } else {
         alert('Failed to open content');
