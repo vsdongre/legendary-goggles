@@ -832,9 +832,11 @@ function App() {
                           </span>
                           <button
                             onClick={() => openContent(content.id)}
-                            className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm font-medium transition-colors duration-200"
+                            className={`px-3 py-1 rounded text-sm font-medium transition-colors duration-200 text-white ${
+                              fileType === 'video' ? 'bg-red-500 hover:bg-red-600' : 'bg-blue-500 hover:bg-blue-600'
+                            }`}
                           >
-                            🔗 Open
+                            {fileType === 'video' ? '▶️ Play Video' : '🔗 Open'}
                           </button>
                         </div>
                       </div>
