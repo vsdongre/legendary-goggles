@@ -321,21 +321,32 @@ async def open_content(content_id: str, user_id: str = Depends(verify_token)):
     if not content:
         raise HTTPException(status_code=404, detail="Content not found")
     
-    file_path = content["file_path"]
+    # Handle both old and new content structures
+    file_path = content.get("file_path") or content.get("content_data")
+    
+    if not file_path:
+        raise HTTPException(status_code=400, detail="No file path or content data found")
     
     # If it's a URL, return the URL
     if file_path.startswith(('http://', 'https://')):
         return {"type": "url", "path": file_path}
     
-    # If it's a local file, check if it exists
+    # If it's a local file, check if it exists (basic validation)
     if not is_valid_path(file_path):
-        raise HTTPException(status_code=404, detail="File not found")
+        # For old content that might just be text, return as text content
+        if not ('\\' in file_path or '/' in file_path or '.' in file_path):
+            return {
+                "type": "text",
+                "content": file_path,
+                "title": content["title"],
+                "content_type": content["content_type"]
+            }
     
     # Return file info for client to handle
     return {
         "type": "file",
         "path": file_path,
-        "content_type": content["content_type"],
+        "content_type": content.get("content_type", "file"),
         "title": content["title"]
     }
 
