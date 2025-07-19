@@ -931,12 +931,23 @@ function App() {
                               'bg-blue-500 hover:bg-blue-600'
                             }`}
                           >
-                            {fileType === 'video' ? '▶️ Play Video' :
-                             fileType === 'pdf' ? '📖 Open PDF' :
-                             fileType === 'document' ? '📝 Open Doc' :
-                             fileType === 'spreadsheet' ? '📊 Open Sheet' :
-                             fileType === 'presentation' ? '📺 Open Slides' :
-                             '🔗 Open'}
+                            {window.electronAPI ? (
+                              // Desktop mode - direct opening
+                              fileType === 'video' ? '▶️ Play Video' :
+                              fileType === 'pdf' ? '📖 Open PDF' :
+                              fileType === 'document' ? '📝 Open Doc' :
+                              fileType === 'spreadsheet' ? '📊 Open Sheet' :
+                              fileType === 'presentation' ? '📺 Open Slides' :
+                              '🔗 Open File'
+                            ) : (
+                              // Web mode - instructions
+                              fileType === 'video' ? '▶️ Play Video' :
+                              fileType === 'pdf' ? '📖 Open PDF' :
+                              fileType === 'document' ? '📝 Open Doc' :
+                              fileType === 'spreadsheet' ? '📊 Open Sheet' :
+                              fileType === 'presentation' ? '📺 Open Slides' :
+                              '🔗 Open'
+                            )}
                           </button>
                         </div>
                       </div>
