@@ -102,7 +102,7 @@
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
 
-user_problem_statement: "User reported that locally uploaded video content cannot be previewed. The system should support playing videos from localhost/server paths, not just YouTube URLs. Current implementation only handles YouTube video embeds."
+user_problem_statement: "User wants a working LAN-based e-learning system that stores file paths (C:\Documents\file.pdf, \\server\share\video.mp4, URLs) instead of uploading files. System should provide clear instructions for opening local files since browsers cannot open local files directly due to security restrictions. Current issues: 1) Frontend form submission for adding content needs verification, 2) Local file opening mechanism needs to be corrected to provide copy-to-clipboard instructions instead of failed direct opening attempts."
 
 backend:
   - task: "File Upload API Support"
