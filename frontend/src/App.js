@@ -283,7 +283,7 @@ function App() {
     }
   };
 
-  // Content opening function - LAN FILE INSTRUCTIONS
+  // Content opening function - ELECTRON DESKTOP DIRECT FILE OPENING
   const openContent = async (contentId) => {
     try {
       const token = localStorage.getItem('token');
@@ -295,33 +295,70 @@ function App() {
         const data = await response.json();
         
         if (data.type === 'url') {
-          // Open URL in new tab - WORKS IMMEDIATELY
-          window.open(data.path, '_blank');
+          // Check if running in Electron
+          if (window.electronAPI) {
+            // Use Electron to open URL
+            const result = await window.electronAPI.openFile(data.path);
+            if (result.success) {
+              console.log('URL opened successfully');
+            } else {
+              alert(`Failed to open URL: ${result.message}`);
+            }
+          } else {
+            // Fallback for web browser
+            window.open(data.path, '_blank');
+          }
         } else if (data.type === 'file') {
           const isUrl = data.path.startsWith('http://') || data.path.startsWith('https://');
           
           if (isUrl) {
-            // Open web URLs directly - WORKS IMMEDIATELY
-            window.open(data.path, '_blank');
+            // Handle web URLs
+            if (window.electronAPI) {
+              const result = await window.electronAPI.openFile(data.path);
+              if (result.success) {
+                console.log('Web URL opened successfully');
+              } else {
+                alert(`Failed to open URL: ${result.message}`);
+              }
+            } else {
+              window.open(data.path, '_blank');
+            }
           } else {
-            // For local/network files - COPY TO CLIPBOARD AND SHOW INSTRUCTIONS
-            try {
-              // Copy file path to clipboard
-              await navigator.clipboard.writeText(data.path);
+            // Handle local/network files - DIRECT OPENING WITH ELECTRON
+            if (window.electronAPI) {
+              console.log('Opening file with Electron:', data.path);
+              const result = await window.electronAPI.openFile(data.path);
               
-              // Show instructions based on content type
-              const fileType = getFileType(data.path);
-              const instructions = getOpenInstructions(fileType, data.path);
-              
-              alert(`📋 File path copied to clipboard!\n\n${instructions}\n\nFile Path: ${data.path}\n\n💡 The path has been automatically copied to your clipboard. Just paste it where needed!`);
-            } catch (clipboardErr) {
-              // Fallback if clipboard access fails
-              const fileType = getFileType(data.path);
-              const instructions = getOpenInstructions(fileType, data.path);
-              
-              // Create a modal-like alert with instructions
-              const message = `🗂️ To open this file:\n\n${instructions}\n\nFile Path: ${data.path}\n\n📝 Copy the path above and follow the instructions.`;
-              alert(message);
+              if (result.success) {
+                console.log('✅ File opened successfully!');
+                // Show brief success message
+                const fileType = getFileType(data.path);
+                const fileIcon = getFileIcon(fileType);
+                alert(`${fileIcon} File opened successfully!\n\nPath: ${data.path}`);
+              } else {
+                // If direct opening fails, offer to show in folder
+                const showInFolder = confirm(`❌ Could not open file directly: ${result.message}\n\n📁 Would you like to show the file in folder instead?`);
+                if (showInFolder) {
+                  const folderResult = await window.electronAPI.showFileInFolder(data.path);
+                  if (folderResult.success) {
+                    alert('📂 File location opened in file explorer');
+                  } else {
+                    alert(`Failed to show file in folder: ${folderResult.message}`);
+                  }
+                }
+              }
+            } else {
+              // Fallback for web browser - show instructions
+              try {
+                await navigator.clipboard.writeText(data.path);
+                const fileType = getFileType(data.path);
+                const instructions = getOpenInstructions(fileType, data.path);
+                alert(`📋 File path copied to clipboard!\n\n${instructions}\n\nFile Path: ${data.path}\n\n💡 The path has been automatically copied to your clipboard.`);
+              } catch (clipboardErr) {
+                const fileType = getFileType(data.path);
+                const instructions = getOpenInstructions(fileType, data.path);
+                alert(`🗂️ To open this file:\n\n${instructions}\n\nFile Path: ${data.path}\n\n📝 Copy the path above and follow the instructions.`);
+              }
             }
           }
         } else if (data.type === 'text') {
@@ -332,6 +369,7 @@ function App() {
         alert('Failed to open content');
       }
     } catch (err) {
+      console.error('Error opening content:', err);
       alert('Error opening content');
     }
   };
