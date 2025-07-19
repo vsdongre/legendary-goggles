@@ -105,35 +105,41 @@
 user_problem_statement: "User wants a working LAN-based e-learning system that stores file paths (C:\Documents\file.pdf, \\server\share\video.mp4, URLs) instead of uploading files. System should provide clear instructions for opening local files since browsers cannot open local files directly due to security restrictions. Current issues: 1) Frontend form submission for adding content needs verification, 2) Local file opening mechanism needs to be corrected to provide copy-to-clipboard instructions instead of failed direct opening attempts."
 
 backend:
-  - task: "File Upload API Support"
+  - task: "LAN File Path Storage"
     implemented: true
     working: true
     file: "server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: false
+    needs_retesting: true
     status_history:
       - working: true
         agent: "main"
-        comment: "Backend has /api/content/upload-file endpoint that accepts file uploads and saves to uploads directory. Static file serving is configured with app.mount('/uploads')."
-      - working: true
-        agent: "testing"
-        comment: "TESTED: File upload API is working correctly. Authentication is properly enforced (403 without token, 200 with token). Files are uploaded with unique UUIDs and proper extensions. Content records are created in database with correct metadata including content_type detection (video/image/document). Tested with admin credentials admin@example.com/Admin123!."
+        comment: "Backend stores file paths (C:\paths, \\server\shares, URLs) in database via ContentCreate model with file_path field. Content creation endpoint validates paths without checking server-side existence for LAN environment."
 
-  - task: "Video File Storage and Serving"
+  - task: "Content Creation API"
     implemented: true
-    working: true
+    working: false
     file: "server.py"
-    stuck_count: 0
+    stuck_count: 1
     priority: "high"
-    needs_retesting: false
+    needs_retesting: true
     status_history:
-      - working: true
+      - working: false
         agent: "main"
-        comment: "Backend creates uploads/videos directory and serves static files via /uploads route. Video files are saved with unique filenames and proper extensions."
-      - working: true
-        agent: "testing"
-        comment: "TESTED: Static file serving is functional. Uploaded files are accessible via /uploads/{filename} route. Files are stored in backend/uploads/ directory with proper structure. Content-type detection works correctly (video files detected as content_type='video'). Minor: Static files served with text/html content-type instead of video/mp4, but files are accessible and content is correct."
+        comment: "Need to verify content creation API works with LAN file paths. Previous testing was for file upload system, not LAN path system."
+
+  - task: "Content Opening API"
+    implemented: true
+    working: false
+    file: "server.py"
+    stuck_count: 1
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: false
+        agent: "main"
+        comment: "open_content endpoint returns file path info but needs verification with LAN path system."
 
 frontend:
   - task: "File Upload Interface"
