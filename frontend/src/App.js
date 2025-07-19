@@ -298,17 +298,28 @@ function App() {
           // Open URL in new tab
           window.open(data.path, '_blank');
         } else if (data.type === 'file') {
-          // For local files, try to open them
-          if (data.path.startsWith('http://') || data.path.startsWith('https://')) {
+          // For files, provide multiple options
+          const isUrl = data.path.startsWith('http://') || data.path.startsWith('https://');
+          
+          if (isUrl) {
+            // Open web URLs directly
             window.open(data.path, '_blank');
           } else {
-            // For local LAN files, construct file:// URL
-            const fileUrl = `file:///${data.path.replace(/\\/g, '/')}`;
-            window.open(fileUrl, '_blank');
+            // For local files, show instructions
+            const message = `File: ${data.title}\nPath: ${data.path}\n\nFor LAN access:\n1. Copy the file path\n2. Open File Explorer\n3. Paste the path in the address bar\n\nPath copied to clipboard!`;
+            
+            // Copy path to clipboard
+            try {
+              await navigator.clipboard.writeText(data.path);
+              alert(message);
+            } catch (err) {
+              alert(`File: ${data.title}\nPath: ${data.path}\n\nPlease copy this path manually to access the file.`);
+            }
           }
         } else if (data.type === 'text') {
-          // For text content, show in a modal or alert
-          alert(`Content: ${data.title}\n\n${data.content}`);
+          // For text content, show in a better modal
+          const message = `Content: ${data.title}\n\n${data.content}`;
+          alert(message);
         } else {
           // Fallback for other types
           alert(`Content: ${data.title}\nPath: ${data.path}`);
