@@ -298,17 +298,38 @@ function App() {
           // Open URL in new tab
           window.open(data.path, '_blank');
         } else if (data.type === 'file') {
-          // For files, provide multiple options
+          // Check if it's a video file
+          const isVideo = data.content_type === 'video' || 
+                         data.path.match(/\.(mp4|avi|mov|wmv|webm|mkv|flv)$/i);
+          
           const isUrl = data.path.startsWith('http://') || data.path.startsWith('https://');
           
           if (isUrl) {
             // Open web URLs directly
             window.open(data.path, '_blank');
-          } else {
-            // For local files, show instructions
-            const message = `File: ${data.title}\nPath: ${data.path}\n\nFor LAN access:\n1. Copy the file path\n2. Open File Explorer\n3. Paste the path in the address bar\n\nPath copied to clipboard!`;
+          } else if (isVideo) {
+            // For video files, provide video-specific instructions
+            const message = `🎥 Video: ${data.title}\n\n` +
+                          `📍 File Location: ${data.path}\n\n` +
+                          `🎬 To Play Video:\n` +
+                          `1. Copy the file path (already copied!)\n` +
+                          `2. Open File Explorer or Finder\n` +
+                          `3. Paste the path in address bar (Ctrl+V)\n` +
+                          `4. Double-click the video file to play\n\n` +
+                          `💡 Tip: The video will open in your default video player\n` +
+                          `(Windows Media Player, VLC, QuickTime, etc.)`;
             
             // Copy path to clipboard
+            try {
+              await navigator.clipboard.writeText(data.path);
+              alert(message);
+            } catch (err) {
+              alert(`🎥 Video: ${data.title}\nPath: ${data.path}\n\nPlease copy this path manually to access the video file.`);
+            }
+          } else {
+            // For non-video files, use regular file instructions
+            const message = `File: ${data.title}\nPath: ${data.path}\n\nFor LAN access:\n1. Copy the file path\n2. Open File Explorer\n3. Paste the path in the address bar\n\nPath copied to clipboard!`;
+            
             try {
               await navigator.clipboard.writeText(data.path);
               alert(message);
