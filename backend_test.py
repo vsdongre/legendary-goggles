@@ -6,7 +6,7 @@ import tempfile
 from datetime import datetime
 
 class ELearningAPITester:
-    def __init__(self, base_url="https://6359bc25-627c-4dce-8575-b81593bd4fe0.preview.emergentagent.com"):
+    def __init__(self, base_url="https://95ba7191-ec65-469c-a5f3-b612c01c8af2.preview.emergentagent.com"):
         self.base_url = base_url
         self.token = None
         self.user_id = None

@@ -6,7 +6,7 @@ import requests
 import json
 
 def test_video_upload_and_serving():
-    base_url = "https://6359bc25-627c-4dce-8575-b81593bd4fe0.preview.emergentagent.com"
+    base_url = "https://95ba7191-ec65-469c-a5f3-b612c01c8af2.preview.emergentagent.com"
     
     # Login as admin
     login_data = {
