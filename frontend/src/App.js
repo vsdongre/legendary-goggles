@@ -283,7 +283,7 @@ function App() {
     }
   };
 
-  // Content opening function - DIRECT FILE OPENING
+  // Content opening function - LAN FILE INSTRUCTIONS
   const openContent = async (contentId) => {
     try {
       const token = localStorage.getItem('token');
@@ -304,17 +304,24 @@ function App() {
             // Open web URLs directly - WORKS IMMEDIATELY
             window.open(data.path, '_blank');
           } else {
-            // For local files - DIRECT OPENING VIA FILE PROTOCOL
+            // For local/network files - COPY TO CLIPBOARD AND SHOW INSTRUCTIONS
             try {
-              // Try direct file protocol (works in some browsers)
-              const fileUrl = `file:///${data.path.replace(/\\/g, '/')}`;
-              window.open(fileUrl, '_blank');
-            } catch (err) {
-              // Fallback: Use a more compatible approach
-              const link = document.createElement('a');
-              link.href = `file:///${data.path.replace(/\\/g, '/')}`;
-              link.target = '_blank';
-              link.click();
+              // Copy file path to clipboard
+              await navigator.clipboard.writeText(data.path);
+              
+              // Show instructions based on content type
+              const fileType = getFileType(data.path);
+              const instructions = getOpenInstructions(fileType, data.path);
+              
+              alert(`📋 File path copied to clipboard!\n\n${instructions}\n\nFile Path: ${data.path}\n\n💡 The path has been automatically copied to your clipboard. Just paste it where needed!`);
+            } catch (clipboardErr) {
+              // Fallback if clipboard access fails
+              const fileType = getFileType(data.path);
+              const instructions = getOpenInstructions(fileType, data.path);
+              
+              // Create a modal-like alert with instructions
+              const message = `🗂️ To open this file:\n\n${instructions}\n\nFile Path: ${data.path}\n\n📝 Copy the path above and follow the instructions.`;
+              alert(message);
             }
           }
         } else if (data.type === 'text') {
@@ -326,6 +333,70 @@ function App() {
       }
     } catch (err) {
       alert('Error opening content');
+    }
+  };
+
+  // Helper function to get opening instructions based on file type
+  const getOpenInstructions = (fileType, filePath) => {
+    const isNetwork = filePath.startsWith('\\\\');
+    const isWindows = filePath.match(/^[A-Z]:\\/);
+    
+    switch (fileType) {
+      case 'video':
+        return `🎥 To play this video:
+1. Open File Explorer (Windows) or Finder (Mac)
+2. ${isNetwork ? 'Navigate to the network location' : isWindows ? 'Navigate to the drive' : 'Navigate to the folder'}
+3. Paste the path in the address bar and press Enter
+4. Double-click the video file to open in your video player`;
+        
+      case 'pdf':
+        return `📕 To open this PDF:
+1. Open File Explorer (Windows) or Finder (Mac)
+2. ${isNetwork ? 'Navigate to the network location' : isWindows ? 'Navigate to the drive' : 'Navigate to the folder'}
+3. Paste the path in the address bar and press Enter
+4. Double-click the PDF file to open in your PDF reader`;
+        
+      case 'document':
+        return `📄 To open this document:
+1. Open File Explorer (Windows) or Finder (Mac)
+2. ${isNetwork ? 'Navigate to the network location' : isWindows ? 'Navigate to the drive' : 'Navigate to the folder'}
+3. Paste the path in the address bar and press Enter
+4. Double-click the document to open in Microsoft Word or your default editor`;
+        
+      case 'spreadsheet':
+        return `📊 To open this spreadsheet:
+1. Open File Explorer (Windows) or Finder (Mac)
+2. ${isNetwork ? 'Navigate to the network location' : isWindows ? 'Navigate to the drive' : 'Navigate to the folder'}
+3. Paste the path in the address bar and press Enter
+4. Double-click the file to open in Excel or your default spreadsheet app`;
+        
+      case 'presentation':
+        return `📺 To open this presentation:
+1. Open File Explorer (Windows) or Finder (Mac)
+2. ${isNetwork ? 'Navigate to the network location' : isWindows ? 'Navigate to the drive' : 'Navigate to the folder'}
+3. Paste the path in the address bar and press Enter
+4. Double-click the file to open in PowerPoint or your default presentation app`;
+        
+      case 'image':
+        return `🖼️ To view this image:
+1. Open File Explorer (Windows) or Finder (Mac)
+2. ${isNetwork ? 'Navigate to the network location' : isWindows ? 'Navigate to the drive' : 'Navigate to the folder'}
+3. Paste the path in the address bar and press Enter
+4. Double-click the image to open in your default image viewer`;
+        
+      case 'audio':
+        return `🎵 To play this audio:
+1. Open File Explorer (Windows) or Finder (Mac)
+2. ${isNetwork ? 'Navigate to the network location' : isWindows ? 'Navigate to the drive' : 'Navigate to the folder'}
+3. Paste the path in the address bar and press Enter
+4. Double-click the audio file to play in your music player`;
+        
+      default:
+        return `📁 To open this file:
+1. Open File Explorer (Windows) or Finder (Mac)
+2. ${isNetwork ? 'Navigate to the network location' : isWindows ? 'Navigate to the drive' : 'Navigate to the folder'}
+3. Paste the path in the address bar and press Enter
+4. Double-click the file to open with the default application`;
     }
   };
 
