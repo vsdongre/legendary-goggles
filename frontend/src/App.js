@@ -909,10 +909,20 @@ function App() {
                           <button
                             onClick={() => openContent(content.id)}
                             className={`px-3 py-1 rounded text-sm font-medium transition-colors duration-200 text-white ${
-                              fileType === 'video' ? 'bg-red-500 hover:bg-red-600' : 'bg-blue-500 hover:bg-blue-600'
+                              fileType === 'video' ? 'bg-red-500 hover:bg-red-600' :
+                              fileType === 'pdf' ? 'bg-red-600 hover:bg-red-700' :
+                              fileType === 'document' ? 'bg-blue-600 hover:bg-blue-700' :
+                              fileType === 'spreadsheet' ? 'bg-green-600 hover:bg-green-700' :
+                              fileType === 'presentation' ? 'bg-orange-600 hover:bg-orange-700' :
+                              'bg-blue-500 hover:bg-blue-600'
                             }`}
                           >
-                            {fileType === 'video' ? '▶️ Play Video' : '🔗 Open'}
+                            {fileType === 'video' ? '▶️ Play Video' :
+                             fileType === 'pdf' ? '📖 Open PDF' :
+                             fileType === 'document' ? '📝 Open Doc' :
+                             fileType === 'spreadsheet' ? '📊 Open Sheet' :
+                             fileType === 'presentation' ? '📺 Open Slides' :
+                             '🔗 Open'}
                           </button>
                         </div>
                       </div>
