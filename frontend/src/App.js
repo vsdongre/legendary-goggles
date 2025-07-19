@@ -745,6 +745,11 @@ function App() {
               <div className="text-sm text-gray-600">
                 Progress: {userProgress.filter(p => p.completed).length} chapters ({Math.round((userProgress.filter(p => p.completed).length / Math.max(userProgress.length, 1)) * 100)}%)
               </div>
+              {window.electronAPI && (
+                <div className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-medium">
+                  🖥️ Desktop Mode
+                </div>
+              )}
               <div className="text-sm">
                 Welcome, <span className="font-semibold">{user.email}</span>!
               </div>
